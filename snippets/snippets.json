@@ -1,0 +1,109 @@
+{
+	"foreachrow": {
+		"prefix": "foreachrow",
+		"body": [
+			"foreachrow(${1:tTabelle}; ${2:nRow}) {",
+			"\t$0",
+			"};"
+		],
+		"description": "legt eine foreachrow an"
+	},
+	"New Script": {
+		"prefix": "Create Script",
+		"body": [
+			"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
+			"\t\t${6:Erstellt}",
+			"",
+			"///////////////////////////////////////////////////////////////////////////////",
+			"SCRIPT:${1:Scriptnumber},${2:Scriptname},0,0,0,${3:Scripticon}",
+			"",
+			"\tH.LockThisScript();",
+			"\tS.RequestSaveAndUnlock(m_TabNr, m_RecNr);",
+			"\tS.LockActualRecord();",
+			"",
+			"\t$0",
+			"",
+			"\tS.UpdateActualRecord();",
+			"\tS.UnlockActualRecord();",
+			"",
+			"ENDSCRIPT",
+			"///////////////////////////////////////////////////////////////////////////////"
+		],
+		"description":"Erstellt ein neues Skript mit Changekommentar usw."
+	},
+	"New Function": {
+		"prefix": "Create Function",
+		"body": [
+			"$LINE_COMMENT ${5:Documentation}",
+			"FUNCTION: ${1|void,CString,CTable,int,double|} ${2:Functionname}(${3:Parameter});",
+			"\t$1 ${4:Variabale};",
+			"\t$0",
+			"\t",
+			"\tfuncreturn ${4:Variabale};",
+			"ENDFUNCTION;"
+		],
+		"description":"Erstellt eine neue Function"
+	},
+	"New Changecomment": {
+		"prefix": "Create Changecomment",
+		"body": [
+			"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${1:Name}\t$LINE_COMMENT AP-ID:${2:ID}",
+			"\t\t${3:Comment}",
+			"\t\t$0"
+		],
+		"description":"Erstellt einen neuen Changekommentar"
+	},
+	"Set Element": {
+		"prefix": "SetElement",
+		"body": [
+			"SetElement${1|INT,DOUBLE,MONEY,STRING,TABLE|}(${2:Spalte}, ${3:Zeile}, ${4:Wert});",
+			"$0"
+		],
+		"description":"Erstellt ein neues Skript mit Changekommentar usw."
+	},
+	"Get Element": {
+		"prefix": "GetElement",
+		"body": [
+			"SetElement${1|INT,DOUBLE,MONEY,STRING,TABLE|}(${2:Spalte}, ${3:Zeile});",
+			"$0"
+		],
+		"description":"Erstellt ein neues Skript mit Changekommentar usw."
+	},
+	"LockThisScript": {
+		"prefix": ["LockThisScript", "H.LockThisScript"],
+		"body": [
+			"int nParserVersionNumber = H.GetParserVersionNumber();",
+			"if (nParserVersionNumber >= 305) {",
+			"\tH.LockThisScript();",
+			"};"
+		]
+	},
+	"dtNow": {
+		"prefix": ["dtNow", "Now"],
+		"body":[
+			"CDateTime dtNow;",
+			"dtNow.SetActTime();"
+		]
+	},
+	"dtToday": {
+		"prefix": ["dtToday", "Today"],
+		"body":[
+			"CDateTime dtToday;",
+			"dtToday.SetActDateOnly();"
+		]
+	}, 
+	"GetListSelection": {
+		"prefix": ["GetListSelection", "D.GetListSelection"],
+		"body": [
+			"D.GetListSelection(${strTitle}, ${strName1}, ${pTable}, ${bCancelButton}, ${strStatic}, ${nWidth}, ${nHeight}, ${bEnableEdit}, ${nNoEditCol}, ${bEnableSort}, ${nShowStatistics}, ${bDontDBlClickOK}, ${bPrintPortrait}, ${nColorColumns}, ${nPrintTextHeight}, ${nRowHeight}, ${bShowWeekdays}, ${nTreeItemLinkCol}, ${pFormattingTable}, ${bDontShowPrintListButton}, ${nListEditOnChangeScript}, ${bForbidAddRemoveRow}, ${bToggleCheckButton}, ${strNoEditCols});",
+			"$0"
+		]
+	}, 
+	"Select": {
+		"prefix": ["Select", "S.Select"],
+		"body": [
+			"S.Select(${nTable}, ${strWhere}, ${strShow}, ${bShowInactives}, ${nCacheTimeSeconds}, ${nTop}, ${strOrderBy}, ${bOrderDesc}, ${tParameter});",
+			"$0"
+		]
+	}
+}

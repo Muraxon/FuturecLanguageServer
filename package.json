@@ -1,0 +1,107 @@
+{
+	"name": "future-c",
+	"description": "Future C - Languageserver für hausinterne Skriptsprache",
+	"author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
+	"license": "MIT",
+	"version": "1.0.0",
+	"publisher": "marcel-sotiropoulos",
+	"categories": [],
+	"keywords": [
+		"multi-root ready"
+	],
+	"engines": {
+		"vscode": "^1.33.0"
+	},
+	"activationEvents": [
+		"onLanguage:cpp"
+	],
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Muraxon/FuturecLanguageServer.git"
+	},
+	"main": "./client/out/extension",
+	"contributes": {
+		"configuration": {
+			"type": "object",
+			"title": "Future C Einstellung",
+			"properties": {
+				"Future_C_Language_Server.maxNumberOfProblems": {
+					"scope": "resource",
+					"type": "number",
+					"default": 100,
+					"description": "Controls the maximum number of problems produced by the server."
+				},
+				"Future_C_Language_Server.trace.server": {
+					"scope": "window",
+					"type": "string",
+					"enum": [
+						"off",
+						"messages",
+						"verbose"
+					],
+					"default": "off",
+					"description": "Traces the communication between VS Code and the language server."
+				}
+			}
+		},
+		"grammars": [
+			{
+				"language": "cpp",
+				"scopeName": "source.ffscript",
+				"path": "./syntaxes/ffscript.tmLanguage.json"
+			}
+		],
+		"snippets": [
+			{
+				"language": "cpp",
+				"path": "./snippets/snippets.json"
+			}
+		],
+		"keybindings": [
+			{
+				"name": "Neue Function erstellen",
+				"command": "editor.action.insertSnippet",
+				"when": "editorTextFocus",
+				"key": "Ctrl+numpad0",
+				"args": {
+					"langId": "cpp",
+					"name": "New Function"
+				}
+			},
+			{
+				"name": "Neues Skript erstellen",
+				"command": "editor.action.insertSnippet",
+				"when": "editorTextFocus",
+				"key": "Ctrl+numpad1",
+				"args": {
+					"langId": "cpp",
+					"name": "New Script"
+				}
+			},
+			{
+				"name": "Changekommentar erstellen",
+				"command": "editor.action.insertSnippet",
+				"when": "editorTextFocus",
+				"key": "Ctrl+numpad2",
+				"args": {
+					"langId": "cpp",
+					"name": "New Changecomment"
+				}
+			}
+		]
+	},
+	"scripts": {
+		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+		"compile": "tsc -b",
+		"watch": "tsc -b -w",
+		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+		"test": "sh ./scripts/e2e.sh"
+	},
+	"devDependencies": {
+		"@types/mocha": "^5.2.7",
+		"@types/node": "^12.11.7",
+		"tslint": "^5.16.0",
+		"typescript": "^3.6.4"
+	},
+	"icon": "logo.png"
+}

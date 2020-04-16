@@ -1,0 +1,185 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "ffscript",
+	"patterns": [
+		{
+			"include": "#keywords"
+		}, {
+			"include": "#strings"
+		}, {
+			"include": "#variableDefinitions"
+		}, {
+			"include": "#functionDefinition"
+		}, {
+			"include": "#functionDocumentation"
+		}, {
+			"include": "#includeDefinition"
+		}, {
+			"include": "#functionCall"
+		}, {
+			"include": "#comments"
+		}, {
+			"include": "#commentsBlock"
+		}, {
+			"include": "#clientConstants"
+		}, {
+			"include": "#numbers"
+		}, {
+			"include": "#clientFunction"
+		}
+	],
+	"repository": {
+		"clientConstants": {
+			"patterns": [{
+				"name":"constant.language.ffscript",
+				"match": "\\b(FALSE|TRUE|STRING_QUOTE|STRING_LINEFEED|STRING_LINEBREAK|STRING_TAB|STRING_RAUTE|STRING_BRACKETCLOSE|STRING_BRACKETOPEN|STRING_PARENTHESISCLOSE|STRING_PARENTHESISOPEN|STRING_BACKSLASH1|STRING_BACKSLASH2|STRING_SLASH2|STRING_SLASH1|STRING_CARRIAGERETURN)\\b"
+			}]
+		},
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.ffscript",
+				"match": "\\b(if|else|while|for|return|funcreturn|foreachrow|foreachreverse|void)\\b"
+			}]
+		},
+		"functionDefinition" : {
+			"begin": "(^\\s*FUNCTION:|^\\s*ENDFUNCTION)",
+			"end": "$",
+			"captures": {
+				"0" : { "name": "entity.name.function.ffscript" }
+			},
+			"patterns": [
+				{
+					"include": "#keywords"
+				}, {
+					"include": "#strings"
+				}, {
+					"include": "#variableDefinitions"
+				}, {
+					"include": "#functionDocumentation"
+				}, {
+					"include": "#includeDefinition"
+				}, {
+					"include": "#functionCall"
+				}, {
+					"include": "#comments"
+				}, {
+					"include": "#commentsBlock"
+				}, {
+					"include": "#clientConstants"
+				}, {
+					"include": "#numbers"
+				}, {
+					"include": "#clientFunction"
+				}]
+		},
+		"functionDocumentation":{
+			"name":"comment.block.documentation.ffscript",
+			"begin": "^\\s*ENDSCRIPT\\b",
+			"end": "^\\s*(SCRIPT|INSERTINTOSCRIPT).+$",
+			"captures": {
+				"0": {
+					"name":"markup.bold"
+				}
+			},
+			"patterns": [{
+				"include": "#docuPattern"
+			}]
+		},
+		"clientFunction": {
+			"begin": "\\b(D|S|F|H)\\b",
+			"end": "\\.",
+			"beginCaptures": {
+				"0": { "name": "entity.name.class.ffscript" }
+			}
+		},
+		"variableDefinitions": {
+			"patterns": [{
+				"name":"variable.language.ffscript",
+				"match":"\\b(int|CString|CTable|double|BOOL|CDateTime|CMoney)\\b"
+			}]
+		},
+		"includeDefinition": {
+			"patterns": [{
+				"name":"invalid.illegal.ffscript",
+				"match": "\\#includescript\\s+[0-9]+\\b"
+			}]
+		},
+		"functionCall": {
+			"begin": "\\b[Cc]all:.+\\(",
+			"end": "\\)",
+			"captures": {
+				"0": { "name":"support.class.ffscript"	}
+			},
+			"patterns": [
+				{
+					"include": "#keywords"
+				}, {
+					"include": "#strings"
+				}, {
+					"include": "#variableDefinitions"
+				}, {
+					"include": "#functionDefinition"
+				}, {
+					"include": "#functionDocumentation"
+				}, {
+					"include": "#includeDefinition"
+				}, {
+					"include": "#comments"
+				}, {
+					"include": "#commentsBlock"
+				}, {
+					"include": "#clientConstants"
+				}, {
+					"include": "#numbers"
+				}, {
+					"include": "#clientFunction"
+				}]
+		},
+		"strings": {
+			"name": "string.quoted.double.ffscript",
+			"begin": "\"",
+			"end": "(\"|$)",
+			"patterns": [
+				{
+					"name": "constant.character.escape.ffscript",
+					"match": "\\\\."
+				}
+			]
+		},
+		"numbers": {
+			"name":"constant.character.escape.ffscript",
+			"match": "\\b[0-9]+\\b"
+		},
+		"comments": {
+			"name":"comment.line.ffscript",
+			"begin": "//",
+			"end": "$",
+			"patterns": [{
+				"include": "#docuPattern"
+			}]
+		},
+		"commentsBlock": {
+			"name":"comment.block.ffscript",
+			"begin": "\\/\\*",
+			"end": "\\*\\/",
+			"patterns": [{
+				"include": "#docuPattern"
+			}]
+		},
+		"docuPattern":{
+			"begin": "(\\@param|\\@return|\\@docu|Beschreibung:|DOKU:|Ablauf:|Ergebnis:)",
+			"end": "(\\s+[a-zA-Z&]+\\s+|$)",
+			"endCaptures": {
+				"0": {
+					"name":"markup.changed.ffscript"
+				}
+			},
+			"beginCaptures": {
+				"0":{
+					"name":"markup.bold.ffscript"
+				}
+			}
+		}
+	},
+	"scopeName": "source.ffscript"
+}

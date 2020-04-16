@@ -1,0 +1,388 @@
+/* --------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ * ------------------------------------------------------------------------------------------ */
+
+import {
+	createConnection,
+	TextDocuments,
+	TextDocument,
+	ProposedFeatures,
+	InitializeParams,
+	DidChangeConfigurationNotification,
+	CompletionItem,
+	CompletionItemKind,
+	TextDocumentPositionParams,
+	Hover,
+	Location,
+	SignatureHelp,
+	SignatureInformation,
+	Position,
+	CodeLens
+} from 'vscode-languageserver';
+
+import { Analyzer } from './analyzer';
+import { DocumentManager } from './DocumentManager';
+
+/* Callbacks */
+import { OnHover } from './Events/OnHover';
+import { OnReference } from './Events/OnReference';
+import { OnDefinition } from './Events/OnDefinition';
+import { OnSignature } from './Events/OnSignature';
+
+// Create a connection for the server. The connection uses Node's IPC as a transport.
+// Also include all preview / proposed LSP features.
+let connection = createConnection(ProposedFeatures.all);
+
+// Create a simple text document manager. The text document manager
+// supports full document sync only
+let documents: TextDocuments = new TextDocuments();
+
+let hasConfigurationCapability: boolean = false;
+let hasWorkspaceFolderCapability: boolean = true;
+let hasDiagnosticRelatedInformationCapability: boolean = false;
+let paramsimpl:InitializeParams;
+export let GlobalAnalyzer = new Analyzer();
+let GlobalManager :DocumentManager = new DocumentManager();
+
+connection.onInitialize((params: InitializeParams) => {
+	let capabilities = params.capabilities;
+	paramsimpl = params;
+	
+	// Does the client support the `workspace/configuration` request?
+	// If not, we will fall back using global settings
+	hasConfigurationCapability = !!(
+		capabilities.workspace && !!capabilities.workspace.configuration
+	);
+	hasWorkspaceFolderCapability = !!(
+		capabilities.workspace && !!capabilities.workspace.workspaceFolders
+	);
+	hasDiagnosticRelatedInformationCapability = !!(
+		capabilities.textDocument &&
+		capabilities.textDocument.publishDiagnostics &&
+		capabilities.textDocument.publishDiagnostics.relatedInformation
+	);
+
+	return {
+		capabilities: {
+			textDocumentSync: documents.syncKind,
+			// Tell the client that the server supports code completion
+			completionProvider: {
+				resolveProvider: true,
+				triggerCharacters: ['.']
+			},
+			hoverProvider: true,
+			referencesProvider: true,
+			definitionProvider: true,
+			signatureHelpProvider: {
+				triggerCharacters: ['(']
+			},
+			codeLensProvider: {
+				resolveProvider: false
+			}
+		}
+	};
+});
+
+connection.onInitialized(() => {
+	if (hasConfigurationCapability) {
+		// Register for all configuration changes.
+		connection.client.register(DidChangeConfigurationNotification.type, undefined);
+	}
+	if (hasWorkspaceFolderCapability) {
+		connection.workspace.onDidChangeWorkspaceFolders(_event => {
+			connection.console.log('Workspace folder change event received.');
+		});
+	}
+	console.log("onInitialized");
+	GlobalManager.clear();
+	connection.sendNotification("custom/getFilenames");
+});
+
+// The example settings
+interface ExampleSettings {
+	maxNumberOfProblems: number;
+}
+
+// The global settings, used when the `workspace/configuration` request is not supported by the client.
+// Please note that this is not the case when using this server with the client provided in this example
+// but could happen with other clients.
+const defaultSettings: ExampleSettings = { 
+	maxNumberOfProblems: 1000
+};
+
+let globalSettings: ExampleSettings = defaultSettings;
+
+// Cache the settings of all open documents
+let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+
+connection.onDidChangeConfiguration(change => {
+	GlobalManager.clear();
+
+	if (hasConfigurationCapability) {
+		// Reset all cached document settings
+		documentSettings.clear();
+	} else {
+		globalSettings = <ExampleSettings>(
+			(change.settings.Future_C_Language_Server || defaultSettings)
+		);
+	}
+	console.log("onDidChangeConfiguration");
+	// Revalidate all open text documents
+	connection.sendNotification("custom/getFilenames");
+	documents.all().forEach(validateTextDocument);
+});
+
+function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
+	if (!hasConfigurationCapability) {
+		return Promise.resolve(globalSettings);
+	}
+
+	let result = documentSettings.get(resource);
+	if (!result) {
+		result = connection.workspace.getConfiguration({
+			scopeUri: resource,
+			section: 'Future_C_Language_Server'
+		});
+		documentSettings.set(resource, result);
+	}
+	return result;
+}
+
+// Only keep settings for open documents
+documents.onDidClose(e => {
+	documentSettings.delete(e.document.uri);
+	GlobalManager.add(e.document);
+
+});
+
+documents.onDidOpen(e => {
+	GlobalManager.delete(e.document.uri);
+});
+
+// The content of a text document has changed. This event is emitted
+// when the text document first opened or when its content has changed.
+documents.onDidChangeContent(change => {
+	validateTextDocument(change.document);
+});
+
+connection.onNotification("custom/sendFilename", (uris: string[]) => {
+	console.log("onNotification custom/sendFilename")
+	//console.log(documents);
+	//console.log(notManageddocuments);
+	GlobalManager.clear();
+
+	//console.log(documents);
+	uris.forEach(element => {
+		let doc = documents.get(element);
+		if(doc) {
+			GlobalManager.delete(element);
+		}
+		else {
+			GlobalManager.addFromFile(element);
+		}
+	});
+
+	
+	//console.log(documents);
+	//console.log(notManageddocuments);
+})
+
+async function validateTextDocument(textDocument: TextDocument): Promise<void> {
+	// In this simple example we get the settings for every validate run.
+	let settings = await getDocumentSettings(textDocument.uri);
+
+	let sig = GlobalAnalyzer.getDiagnosticForScript(textDocument);
+	
+	// Send the computed diagnostics to VSCode.
+	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: sig });
+}
+
+connection.onDidChangeWatchedFiles(_change => {
+	// Monitored files have change in VSCode
+	console.log('We received an file change event');
+	console.log(_change);
+
+});
+
+connection.onHover((params :TextDocumentPositionParams, token): Hover => {
+	let doc = documents.get(params.textDocument.uri);
+
+	let test = <Hover>GlobalManager.doWithDocuments(documents, doc!, params.position, OnHover);
+	//<(docs: Map<string, TextDocument>, curDoc :TextDocument, pos: Position) => Hover, Hover>
+	return test;
+});
+
+connection.onSignatureHelp((params, token): SignatureHelp => {
+	let doc = documents.get(params.textDocument.uri);
+	let fnc :SignatureInformation[] = [];
+	//console.log("onSignatureHelp");
+	if(doc) {
+		let signatureHelp = <SignatureHelp>GlobalManager.doWithDocuments(documents, doc, params.position, OnSignature);
+		return signatureHelp;
+
+	}
+	return {
+		activeParameter: 0,
+		activeSignature: 0,
+		signatures: fnc
+	}
+});
+
+connection.onReferences((refer, token): Location[] => {
+	let doc = documents.get(refer.textDocument.uri);
+	if(doc) {
+		
+		let references = <Location[]>GlobalManager.doWithDocuments(documents, doc, refer.position, OnReference);
+		return references;
+	}
+	return [];
+});
+
+connection.onDefinition((param, token): Location[] => {
+	let doc = documents.get(param.textDocument.uri);
+	if(doc) {
+		
+		let references = <Location[]>GlobalManager.doWithDocuments(documents, doc, param.position, OnReference);
+		return references;
+	}
+	return [];
+});
+
+// This handler provides the initial list of the completion items.
+connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams, token): CompletionItem[] => {
+	// The pass parameter contains the position of the text document in
+	// which code complete got requested. For the example we ignore this
+	// info and always provide the same completion items.
+	let doc = documents.get(_textDocumentPosition.textDocument.uri);
+
+	let completionitems :CompletionItem[] = new Array();
+
+	if(doc) {
+		let offset = doc.offsetAt(_textDocumentPosition.position);
+		if(offset){
+			let line = doc.getText({
+				start: {character: 0, line: _textDocumentPosition.position.line },
+				end: {character: _textDocumentPosition.position.character, line: _textDocumentPosition.position.line }
+			});
+
+			let char = line.charAt(line.length - 2);
+
+			if(char == "D" || char == "H" || char == "F" || char == "S") {
+				completionitems.push({
+					label: 'TypeScript',
+					kind: CompletionItemKind.Function,
+					data: 1
+				});
+				completionitems.push({
+					label: 'JavaScript',
+					kind: CompletionItemKind.Text,
+					data: 2
+				});
+			}
+		}
+	}
+	return completionitems;
+});
+
+// This handler resolves additional information for the item selected in
+// the completion list.
+connection.onCompletionResolve(
+	(item: CompletionItem, token): CompletionItem => {
+		if (item.data === 1) {
+			item.detail = 'TypeScript details';
+			item.documentation = 'TypeScript documentation';
+
+		} else if (item.data === 2) {
+			item.detail = 'JavaScript details';
+			item.documentation = 'JavaScript documentation';
+		}
+		return item;
+	}
+);
+
+let codelens :CodeLens[] = [];
+connection.onCodeLens((params, token):CodeLens[] => {
+	let doc = documents.get(params.textDocument.uri);
+	if(doc) {
+		let text = doc.getText();
+		let pattern = /^.*\bS\.(Select|(Set|Add)....?.?.?.?.?.?.?.?)\(.*\)\;.*$/gm;
+		let patternFunction = /S\..*/g;
+		codelens = [];
+		let m :RegExpExecArray|null = null;
+		while(m = pattern.exec(text)) {
+
+			patternFunction.lastIndex = m.index;
+
+			m = patternFunction.exec(text);
+			if(m) {
+				
+
+				let patternStart = /\(/g;
+				patternStart.lastIndex = m.index + 1;
+				let startNumber = patternStart.exec(text);
+				if(startNumber) {
+					startNumber.index++;
+
+					let patternEnd = /\,/g;
+					patternEnd.lastIndex = startNumber.index;
+					let endNumber = patternEnd.exec(text);
+					if(endNumber) {
+						let tableNumber = text.substring(startNumber.index, endNumber.index);
+						let pos = doc.positionAt(startNumber.index);
+						let number = parseInt(tableNumber);
+
+						let fallback = "";
+						if(isNaN(number)) {
+							number = 90;
+							fallback = " fallback auf Tabelle 90, weil nicht bestimmbar"
+						}
+						codelens.push({
+							range: {start: {character: pos.character, line: pos.line}, end: {character: pos.character, line: pos.line}},
+							command: {
+								title: "Spalten anzeigen" + fallback,
+								command: "Spalten.anzeigen",
+								arguments: [number]
+							}
+						});
+					}
+	
+				}
+
+			}
+		}
+		console.log(codelens.length);
+	} else {
+		console.log("do nothing");
+	}
+
+	return codelens;
+});
+
+connection.onDidOpenTextDocument((params) => {
+	// A text document got opened in VSCode.
+	// params.textDocument.uri uniquely identifies the document. For documents store on disk this is a file URI.
+	// params.textDocument.text the initial full content of the document.
+	connection.console.log(`${params.textDocument.uri} opened.`);
+});
+
+connection.onDidChangeTextDocument((params) => {
+	// The content of a text document did change in VSCode.
+	// params.textDocument.uri uniquely identifies the document.
+	// params.contentChanges describe the content changes to the document.
+	connection.console.log(`${params.textDocument.uri} changed: ${JSON.stringify(params.contentChanges)}`);
+});
+
+connection.onDidCloseTextDocument((params) => {
+	// A text document got closed in VSCode.
+	// params.textDocument.uri uniquely identifies the document.
+	connection.console.log(`${params.textDocument.uri} closed.`);
+});
+
+
+// Make the text document manager listen on the connection
+// for open, change and close text document events
+documents.listen(connection);
+
+// Listen on the connection
+connection.listen();
