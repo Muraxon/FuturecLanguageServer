@@ -2,12 +2,24 @@ import { TextDocument, CompletionItem, Position } from 'vscode-languageserver';
 import { GlobalAnalyzer } from '../server';
 
 
-export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :CompletionItem[] {
-	let item :CompletionItem[] = [];
+let completionCached :CompletionItem[] = [];
+let posCached :Position|null = null;
 
-	let scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true);
+export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :CompletionItem[] {
+	if(posCached) {
+		if(posCached.line == pos.line) {
+			console.log("caching");
+			return completionCached;
+		}
+	}
+
+	let alreadyAdded :string[] = [];
+	completionCached = [];
+	posCached = pos;
+
+	let scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 	if(scripttext) {
-		let varPattern = /\b(int|CString|CTable|double|CMoney|CDateTime|float)\s+[a-zA-Z0-9_]+\s*(\=|\;)/g;
+		let varPattern = /\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\s+[a-zA-Z0-9_]+\s*(\=|\;)/g;
 		let text = scripttext.m_scripttext;
 		let m :RegExpExecArray|null = null;
 		while(m = varPattern.exec(text)) {
@@ -23,13 +35,18 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 					let mEnd = patternBeginVar.exec(text);
 					if(mEnd) {
 						let variable = text.substring(m.index, mEnd.index);
-						item.push({
-							label: variable,
-							documentation: "ich bin doku"
-						})
+						if(!alreadyAdded.find((vari) => {
+							if(vari == variable) {
+								return true;
+							}
+						})) {
 
+							alreadyAdded.push(variable);
+							completionCached.push({
+								label: variable
+							});
+						}
 					}
-
 				}
 			}
 
@@ -37,5 +54,5 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 
 	}
 
-	return item;
+	return completionCached;
 }

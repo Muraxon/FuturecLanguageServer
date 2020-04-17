@@ -92,8 +92,8 @@ export class Analyzer {
 		return null;
 	}
 
-	getCompleteCurrentScript(CursorPos :Position, doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>, includescript :boolean = true) :Script|null {
-		let editedScript = this.getEditedScript(CursorPos, doc);
+	getCompleteCurrentScript(CursorPos :Position, doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>, includescript :boolean = true, toPos :boolean = false) :Script|null {
+		let editedScript = this.getEditedScript(CursorPos, doc, toPos);
 		if(editedScript && includescript) {
 			this.getIncludeScriptForCurrentScript(editedScript, _NotManagedDocs);
 		}
@@ -115,7 +115,7 @@ export class Analyzer {
 		}	
 	}
 
-	public getEditedScript(CursorPos :Position, doc :TextDocument) :Script|null {
+	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false) :Script|null {
 		let editedScript :Script|null = null;
 		
 		let completeDocText = doc.getText();
@@ -144,12 +144,18 @@ export class Analyzer {
 			let scriptNumberEnd = patternNumberEnd.exec(completeDocText);
 			if(scriptNumberEnd) {
 				let scriptNumber = parseInt(completeDocText.substring(m + scriptNumberStart, scriptNumberEnd.index));
-				let ex = patternEnd.exec(completeDocText);
-				if(ex) {
-					if(ex.index > ex1.index && (offset > ex1.index) && (offset < ex.index)) {
-						let scriptText = completeDocText.substr(ex1.index, ex.index - ex1.index);
-						editedScript = new Script(scriptText, scriptNumber, posScript, doc.uri);
+				let ex :RegExpExecArray|null = null;
+				let index = doc.offsetAt(CursorPos);
+				if(!toPos) {
+					ex = patternEnd.exec(completeDocText);
+					if(ex) {
+						index = ex.index;
 					}
+				}
+
+				if((index > ex1.index && (offset > ex1.index) && (offset < index)) || (toPos)) {
+					let scriptText = completeDocText.substring(ex1.index, index);
+					editedScript = new Script(scriptText, scriptNumber, posScript, doc.uri);
 				}
 			}
 		}
