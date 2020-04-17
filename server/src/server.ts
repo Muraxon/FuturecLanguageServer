@@ -29,6 +29,7 @@ import { OnHover } from './Events/OnHover';
 import { OnReference } from './Events/OnReference';
 import { OnDefinition } from './Events/OnDefinition';
 import { OnSignature } from './Events/OnSignature';
+import { OnCompletion } from './Events/OnCompletion';
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -250,37 +251,17 @@ connection.onDefinition((param, token): Location[] => {
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((_textDocumentPosition: TextDocumentPositionParams, token): CompletionItem[] => {
+connection.onCompletion((param: TextDocumentPositionParams, token): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
-	let doc = documents.get(_textDocumentPosition.textDocument.uri);
+	let doc = documents.get(param.textDocument.uri);
 
 	let completionitems :CompletionItem[] = new Array();
 
 	if(doc) {
-		let offset = doc.offsetAt(_textDocumentPosition.position);
-		if(offset){
-			let line = doc.getText({
-				start: {character: 0, line: _textDocumentPosition.position.line },
-				end: {character: _textDocumentPosition.position.character, line: _textDocumentPosition.position.line }
-			});
-
-			let char = line.charAt(line.length - 2);
-
-			if(char == "D" || char == "H" || char == "F" || char == "S") {
-				completionitems.push({
-					label: 'TypeScript',
-					kind: CompletionItemKind.Function,
-					data: 1
-				});
-				completionitems.push({
-					label: 'JavaScript',
-					kind: CompletionItemKind.Text,
-					data: 2
-				});
-			}
-		}
+		completionitems = GlobalManager.doWithDocuments(documents, doc, param.position, OnCompletion);
+		return completionitems;
 	}
 	return completionitems;
 });
