@@ -18,7 +18,13 @@ import {
 	SignatureHelp,
 	SignatureInformation,
 	Position,
-	CodeLens
+	CodeLens,
+	Diagnostic,
+	Command,
+	CodeAction,
+	CodeActionKind,
+	WorkspaceEdit,
+	ExecuteCommandRequest
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
@@ -30,6 +36,8 @@ import { OnReference } from './Events/OnReference';
 import { OnDefinition } from './Events/OnDefinition';
 import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
+import { OnDiagnostic } from './Events/OnDiagnostic';
+
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -80,7 +88,8 @@ connection.onInitialize((params: InitializeParams) => {
 			},
 			codeLensProvider: {
 				resolveProvider: false
-			}
+			},
+			codeActionProvider: true
 		}
 	};
 });
@@ -167,6 +176,21 @@ documents.onDidChangeContent(change => {
 	validateTextDocument(change.document);
 });
 
+connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
+	console.log("custom/GetDiagnostic");
+
+
+	let doc = documents.get(param2);
+	if(doc) {
+		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
+		
+		connection.sendDiagnostics({
+			diagnostics: diag,
+			uri: param2
+		})
+	}
+});
+
 connection.onNotification("custom/sendFilename", (uris: string[]) => {
 	console.log("onNotification custom/sendFilename")
 	//console.log(documents);
@@ -193,10 +217,10 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
 
-	let sig = GlobalAnalyzer.getDiagnosticForScript(textDocument);
+	//let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, textDocument, {character: 0, line: 0}, OnDiagnostic);
 	
 	// Send the computed diagnostics to VSCode.
-	connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: sig });
+	//connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: sig });
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -204,6 +228,26 @@ connection.onDidChangeWatchedFiles(_change => {
 	console.log('We received an file change event');
 	console.log(_change);
 
+});
+
+connection.onCodeAction((params, token) :(Command | CodeAction)[] => {
+	let doc = documents.get(params.textDocument.uri);
+	if(doc) {
+		console.log(params);
+		return [{
+			title: "Extract return and replace with isVariableDefined",
+			diagnostics: params.context.diagnostics,
+			kind: CodeActionKind.QuickFix,
+			edit: {
+				changes: {
+					[params.textDocument.uri]: [{
+						range: params.range, newText: "if(H.IsVariableDefined(XXX)) {\n\t\t//Do Something to prevent execution\n\t}"
+					}]
+				}
+			}
+		}];
+	}
+	return [];
 });
 
 connection.onHover((params :TextDocumentPositionParams, token): Hover => {

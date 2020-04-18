@@ -92,7 +92,7 @@ export class DocumentManager {
 
 	getDocuments() {
 		if(!this.m_AddedManagedDocuments) {
-			throw new Error("Managed Documents from VSCode werent added before getting all of the documents");
+			//throw new Error("Managed Documents from VSCode werent added before getting all of the documents");
 		}
 		return this.m_Documents;
 	}

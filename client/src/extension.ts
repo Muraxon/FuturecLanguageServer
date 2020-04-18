@@ -4,16 +4,35 @@
  * ------------------------------------------------------------------------------------------ */
 
 import * as path from 'path';
-import { workspace, ExtensionContext, ProviderResult, SignatureHelp, Position, commands, window, Uri, ViewColumn, TextEditorRevealType, CodeLens, CompletionItem } from 'vscode';
+import { workspace, 
+	ExtensionContext, 
+	ProviderResult, 
+	SignatureHelp, 
+	Position, 
+	commands, 
+	window,
+	Uri, 
+	ViewColumn, 
+	TextEditorRevealType, 
+	CodeLens, 
+	CompletionItem, 
+	ProgressLocation,
+	StatusBarAlignment,
+	CancellationToken,
+	Progress
+	
+} from 'vscode';
 
 import {
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
-	TransportKind
+	TransportKind,
+	Diagnostic
 } from 'vscode-languageclient';
+import { editor } from './test/helper';
 
-let client: LanguageClient;
+export let client: LanguageClient;
 let x: SignatureHelp | null = null;
 let lastPos: Position | null = null;
 let currentNumber :number|null = null;
@@ -175,6 +194,7 @@ export function activate(context: ExtensionContext) {
 		console.log("opening doc " + e.uri);
 	});
 
+
 	let disp = commands.registerCommand("Spalten.anzeigen", async (args) => {
 		
 		let found = false;
@@ -307,11 +327,24 @@ export function activate(context: ExtensionContext) {
 
 	});
 
+	const command = 'Check.Skript.Syntax';
+
+	const commandHandler = () => {
+		
+		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
+		let uri = window.activeTextEditor.document.uri;
+
+		client.sendNotification("custom/GetDiagnostic", [pos, uri.toString()]);
+	};
+  
+	context.subscriptions.push(commands.registerCommand(command, commandHandler));
+	
 	context.subscriptions.push(disp);
 
 	//console.log("hallo");
 	// Start the client. This will also launch the server
 	client.start();
+	window.showInformationMessage("activation finished");
 };
 
 
