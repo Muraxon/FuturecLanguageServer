@@ -73,9 +73,9 @@ export function activate(context: ExtensionContext) {
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = doc.getText(rangeAtPos);
 				let number = parseInt(text);
-				if(!isNaN(number) && number < 700) {
+				if(!isNaN(number)) {
 					let line = doc.lineAt(pos);
-					if(line.text.search(/\bS\.(Select\(|SelectRecord|(Set|Add)(INT|MONEY|DOUBLE))/) >= 0) {
+					if(line.text.search(/\bS\.(Select|SelectRecord|(Set|Add)(INT|MONEY|DOUBLE))/) >= 0) {
 						commands.executeCommand("Spalten.anzeigen", number);
 					}
 				} else {
