@@ -3,11 +3,13 @@ export class CursorPositionInformation {
 	m_word :string = "";
 	m_char :string = "";
 	m_type :CursorPositionType = CursorPositionType.UNDEFINED_VALUE;
+	m_context :string = "";
 
-	constructor(word :string, char :string, type :CursorPositionType) {
+	constructor(word :string, char :string, type :CursorPositionType, context :string) {
 		this.m_word = word;
 		this.m_char = char;
 		this.m_type = type;
+		this.m_context = context;
 	}
 
 	isValid() :boolean {

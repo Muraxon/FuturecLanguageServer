@@ -88,7 +88,4 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
 Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
   ___
-### Releasenotes
-- **1.0.0**
-  - *as is*
 

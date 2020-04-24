@@ -17,7 +17,13 @@ export class Script {
 	}
 
 	addScripts(...Script: Script[]) {
+		let i = 0;
 		Script.forEach(element => {
+			i++;
+			if(i > 200) {
+				console.log("looping")
+				return;
+			}
 			this.m_scripttext = this.m_scripttext.replace(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b"), element.m_scripttext);
 			this.m_includeScript.push(element.m_scriptnumber);
 		});

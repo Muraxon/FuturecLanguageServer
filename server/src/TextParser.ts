@@ -11,6 +11,8 @@ export class TextParser {
 		let charAtPos = char;
 		let isfunction = false;
 		let isParserfunction = false;
+		let isVarFunction = false;
+		let context = "";
 	
 		let includescriptOffset = offset;
 
@@ -24,6 +26,44 @@ export class TextParser {
 			}
 			else if(char == ".") {
 				isParserfunction = true;
+
+				let offsetTemp = offset;
+
+				offset--;
+				context = text.charAt(offset);
+				if(context == "D" || context == "H" || context == "F" || context == "S") {
+					offset--;
+					char = text.charAt(offset);
+					if(char == "\n" || char == "\t" || char == " ") {
+
+					} else {
+						isVarFunction = true;
+						while((offset > 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
+						(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
+						(char != '\"') && (char != '-') && (char != '#') && (char != '$') && (char != '{') && 
+						(char != ';') && (char != '}')) {
+
+							offset--;
+							char = text.charAt(offset);
+						}
+						offset++;
+						context = text.substring(offset, offsetTemp);
+					}
+				} else {
+					isVarFunction = true;
+					while((offset > 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
+					(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
+					(char != '\"') && (char != '-') && (char != '#') && (char != '$') && (char != '{') && 
+					(char != ';') && (char != '}')) {
+
+						offset--;
+						char = text.charAt(offset);
+					}
+					offset++;
+					context = text.substring(offset, offsetTemp);
+				}
+
+				offset = offsetTemp;
 				break;
 			}
 
@@ -74,7 +114,7 @@ export class TextParser {
 			type = CursorPositionType.VARIABLE;
 		}
 
-		let info :CursorPositionInformation = new CursorPositionInformation(word, charAtPos, type);
+		let info :CursorPositionInformation = new CursorPositionInformation(word, charAtPos, type, context);
 
 		return info;
 	}

@@ -1,9 +1,6 @@
 import { Diagnostic, Position, TextDocument, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments, DiagnosticSeverity} from 'vscode-languageserver';
 import { Script } from './Script';
 import { TextParser } from './TextParser';
-import { CursorPositionInformation, CursorPositionType } from './CursorPositionInformation';
-import { DocumentManager } from './DocumentManager';
-import { exec } from "child_process";
 
 
 export class Analyzer {

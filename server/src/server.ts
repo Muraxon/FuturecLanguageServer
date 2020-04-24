@@ -29,6 +29,7 @@ import {
 
 import { Analyzer } from './analyzer';
 import { DocumentManager } from './DocumentManager';
+import { ParserFunctions } from './parserFunctions/parserFunctions';
 
 /* Callbacks */
 import { OnHover } from './Events/OnHover';
@@ -38,6 +39,8 @@ import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 
+
+export let parserFunctions :ParserFunctions = new ParserFunctions();
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -57,6 +60,7 @@ let GlobalManager :DocumentManager = new DocumentManager();
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 	paramsimpl = params;
+	console.log(capabilities);
 	
 	// Does the client support the `workspace/configuration` request?
 	// If not, we will fall back using global settings
@@ -77,7 +81,7 @@ connection.onInitialize((params: InitializeParams) => {
 			textDocumentSync: documents.syncKind,
 			// Tell the client that the server supports code completion
 			completionProvider: {
-				resolveProvider: true,
+				resolveProvider: false,
 				triggerCharacters: ['.']
 			},
 			hoverProvider: true,
@@ -107,6 +111,7 @@ connection.onInitialized(() => {
 	console.log("onInitialized");
 	GlobalManager.clear();
 	connection.sendNotification("custom/getFilenames");
+	connection.sendNotification("custom/getParserXML");
 });
 
 // The example settings
@@ -207,11 +212,15 @@ connection.onNotification("custom/sendFilename", (uris: string[]) => {
 			GlobalManager.addFromFile(element);
 		}
 	});
-
-	
 	//console.log(documents);
 	//console.log(notManageddocuments);
-})
+});
+
+connection.onNotification("custom/sendParserFunctionXML", (uri :string) => {
+
+	parserFunctions.buildFunctions(uri);
+
+});
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
@@ -226,14 +235,12 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 connection.onDidChangeWatchedFiles(_change => {
 	// Monitored files have change in VSCode
 	console.log('We received an file change event');
-	console.log(_change);
 
 });
 
 connection.onCodeAction((params, token) :(Command | CodeAction)[] => {
 	let doc = documents.get(params.textDocument.uri);
 	if(doc) {
-		console.log(params);
 		return [{
 			title: "Extract return and replace with isVariableDefined",
 			diagnostics: params.context.diagnostics,
@@ -300,10 +307,12 @@ connection.onCompletion((param: TextDocumentPositionParams, token): CompletionIt
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
 	let doc = documents.get(param.textDocument.uri);
-
+	
+	
 	let completionitems :CompletionItem[] = new Array();
 
 	if(doc) {
+		
 		completionitems = GlobalManager.doWithDocuments(documents, doc, param.position, OnCompletion);
 		return completionitems;
 	}

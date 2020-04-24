@@ -19,7 +19,8 @@ import { workspace,
 	ProgressLocation,
 	StatusBarAlignment,
 	CancellationToken,
-	Progress
+	Progress,
+	SnippetString
 	
 } from 'vscode';
 
@@ -70,6 +71,7 @@ export function activate(context: ExtensionContext) {
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
 			provideCompletionItem: (doc, pos, context, token): ProviderResult<CompletionItem[]> => {
+				
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = doc.getText(rangeAtPos);
 				let number = parseInt(text);
@@ -79,6 +81,7 @@ export function activate(context: ExtensionContext) {
 						commands.executeCommand("Spalten.anzeigen", number);
 					}
 				} else {
+
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
 					return client.sendRequest<CompletionItem[]>("textDocument/completion", t);
 				}
@@ -177,14 +180,20 @@ export function activate(context: ExtensionContext) {
 			for (let i = 0; i < res.length; i++) {
 				files[i] = res[i].toString();
 			}
-			/*let res2 = await workspace.findFiles("*.xml");
-			res2.forEach((value) => {
-				files.push(value.toString());
-			})*/
 
 			client.sendNotification("custom/sendFilename", [files]);
 		});
+
+		client.onNotification("custom/getParserXML", async () => {
+			let filename = "";
+			let res2 = await workspace.findFiles("*.xml");
+			res2.forEach((value) => {
+				filename = value.toString();
+			});
+			client.sendNotification("custom/sendParserFunctionXML", filename);
+		})
 	});
+
 
 	workspace.onDidCloseTextDocument((e) => {
 		console.log("closing doc " + e.uri);
@@ -201,7 +210,6 @@ export function activate(context: ExtensionContext) {
 		(await resimportattributes).forEach((value) => {
 			if(found) { console.log("already found"); return; }
 
-			console.log(value.toString());
 			workspace.openTextDocument(value).then((value) => {
 
 				let text = value.getText();
