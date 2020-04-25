@@ -87,12 +87,19 @@
 					"langId": "cpp",
 					"name": "New Changecomment"
 				}
+			}, {
+				"command": "jump.to.start.of.script",
+				"key": "Ctrl+j s",
+				"when": "editorTextFocus"
 			}
 		],
 		"commands": [
 			{
 				"command": "Check.Skript.Syntax",
 				"title": "Check Skript Syntax"
+			}, {
+				"command": "jump.to.start.of.script",
+				"title": "Jump to start of script"
 			}
 		]
 	},

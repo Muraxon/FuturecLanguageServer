@@ -20,7 +20,9 @@ import { workspace,
 	StatusBarAlignment,
 	CancellationToken,
 	Progress,
-	SnippetString
+	SnippetString,
+	CompletionList,
+	Range
 	
 } from 'vscode';
 
@@ -29,9 +31,10 @@ import {
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind,
-	Diagnostic
+	Diagnostic,
+	CompletionRequest,
+	CompletionItemKind
 } from 'vscode-languageclient';
-import { editor } from './test/helper';
 
 export let client: LanguageClient;
 let x: SignatureHelp | null = null;
@@ -70,7 +73,7 @@ export function activate(context: ExtensionContext) {
 		},
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
-			provideCompletionItem: (doc, pos, context, token): ProviderResult<CompletionItem[]> => {
+			provideCompletionItem: async (doc, pos, context) => {
 				
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = doc.getText(rangeAtPos);
@@ -78,12 +81,18 @@ export function activate(context: ExtensionContext) {
 				if(!isNaN(number)) {
 					let line = doc.lineAt(pos);
 					if(line.text.search(/\bS\.(Select|SelectRecord|(Set|Add)(INT|MONEY|DOUBLE))/) >= 0) {
-						commands.executeCommand("Spalten.anzeigen", number);
+						commands.executeCommand("Show.columns", number);
 					}
 				} else {
 
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
-					return client.sendRequest<CompletionItem[]>("textDocument/completion", t);
+					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
+					items.forEach(element => {
+						if(element.kind == CompletionItemKind.Function) {
+							element.insertText = new SnippetString(element.insertText.toString());
+						}
+					});
+					return new CompletionList(items, false);
 				}
 
 				return;
@@ -204,7 +213,7 @@ export function activate(context: ExtensionContext) {
 	});
 
 
-	let disp = commands.registerCommand("Spalten.anzeigen", async (args) => {
+	let disp = commands.registerCommand("Show.columns", async (args) => {
 		
 		let found = false;
 		(await resimportattributes).forEach((value) => {
@@ -336,9 +345,7 @@ export function activate(context: ExtensionContext) {
 	});
 
 	const command = 'Check.Skript.Syntax';
-
 	const commandHandler = () => {
-		
 		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
 		let uri = window.activeTextEditor.document.uri;
 
@@ -348,6 +355,28 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(commands.registerCommand(command, commandHandler));
 	
 	context.subscriptions.push(disp);
+
+	let disp2 = commands.registerCommand("jump.to.start.of.script", () => {
+
+		let posStart = new Position(0, 0);
+		let posEnd = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character)
+
+		let range = new Range(posStart, posEnd);
+		
+		let text = window.activeTextEditor.document.getText(range);
+		let m = text.lastIndexOf("\nSCRIPT:");
+		if(m < 0) {
+			m = text.lastIndexOf("\nINSERTINTOSCRIPT:");
+		}
+		if(m >= 0) {
+
+			let pos = window.activeTextEditor.document.positionAt(m);
+
+			let newRange = new Range(pos, pos);
+			window.activeTextEditor.revealRange(newRange);
+		}
+	});
+	context.subscriptions.push(disp2);
 
 	//console.log("hallo");
 	// Start the client. This will also launch the server

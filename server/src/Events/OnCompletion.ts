@@ -19,12 +19,14 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 		return parserFunctions.getFileFunctions(pos);
 	} else if(word.m_context == "H") {
 		return parserFunctions.getHelperFunctions(pos);
+	} else if(word.m_context == "P") {
+		return parserFunctions.getPrinterFunctions(pos);
 	} else if(word.m_context.length > 2){
 		if(word.m_context == "m_Rec" || word.m_context == "m_Rec2") {
 			return parserFunctions.getTableFunctions(pos);
 		}
 		
-		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
 		if(scripttext) {
 			let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s+" + word.m_context + "\\s*(\\=|\\;)", "g");
 			let m = varPattern.exec(scripttext.m_scripttext);
@@ -39,11 +41,11 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 					return parserFunctions.getMoneyFunctions(pos);
 				} else if(m[1] == "CDateTime") {
 					return parserFunctions.getDateTimeFunctions(pos);
-				}
+				} 
 			}
 		}
 	} else {
-		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
 		if(scripttext) {
 			if(posCached) {
 				if(posCached.line == pos.line) {
@@ -77,8 +79,9 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 									return true;
 								}
 							})) {
-	
+
 								alreadyAdded.push(variable);
+								console.log(variable);
 								completionCached.push({
 									label: variable,
 									commitCharacters: ["."],

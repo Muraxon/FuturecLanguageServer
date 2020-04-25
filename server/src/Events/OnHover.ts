@@ -92,7 +92,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 		let mNotVar = notVariableDefinition.exec(word.m_word);
 		if(!mNotVar) {
 
-			let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true);
+			let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false);
 
 			if(script) {
 				try {

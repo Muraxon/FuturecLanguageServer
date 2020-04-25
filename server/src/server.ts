@@ -24,7 +24,10 @@ import {
 	CodeAction,
 	CodeActionKind,
 	WorkspaceEdit,
-	ExecuteCommandRequest
+	ExecuteCommandRequest,
+	CompletionParams,
+	CompletionTriggerKind,
+	CompletionList
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
@@ -60,7 +63,6 @@ let GlobalManager :DocumentManager = new DocumentManager();
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 	paramsimpl = params;
-	console.log(capabilities);
 	
 	// Does the client support the `workspace/configuration` request?
 	// If not, we will fall back using global settings
@@ -302,13 +304,12 @@ connection.onDefinition((param, token): Location[] => {
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((param: TextDocumentPositionParams, token): CompletionItem[] => {
+connection.onCompletion((param: CompletionParams, token): CompletionItem[] | CompletionList => {
 	// The pass parameter contains the position of the text document in
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
 	let doc = documents.get(param.textDocument.uri);
-	
-	
+
 	let completionitems :CompletionItem[] = new Array();
 
 	if(doc) {
@@ -375,7 +376,7 @@ connection.onCodeLens((params, token):CodeLens[] => {
 							range: {start: {character: pos.character, line: pos.line}, end: {character: pos.character, line: pos.line}},
 							command: {
 								title: "Spalten anzeigen" + fallback,
-								command: "Spalten.anzeigen",
+								command: "Show.columns",
 								arguments: [number]
 							}
 						});
@@ -385,7 +386,6 @@ connection.onCodeLens((params, token):CodeLens[] => {
 
 			}
 		}
-		console.log(codelens.length);
 	} else {
 		console.log("do nothing");
 	}

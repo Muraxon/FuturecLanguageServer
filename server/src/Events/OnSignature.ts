@@ -30,7 +30,6 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 
 	stringBeforeCursor = stringBeforeCursor.substring(foundStartParam, foundEndParam);
 	i = stringBeforeCursor.split(",").length - 1;
-	console.log(stringBeforeCursor);
 
 	pos.character -= 2;
 	let word = TextParser.getWordAtPosition(pos, curDoc);
@@ -44,7 +43,6 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 			}
 		}
 
-		console.log(foundFunction);
 		if(signatureInformation.length <= 0 && foundFunction.length > 0) {
 
 
