@@ -8,7 +8,7 @@ let completionCached :CompletionItem[] = [];
 let posCached :Position|null = null;
 
 export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :CompletionItem[] {
-	let word = TextParser.getWordAtPosition(pos, curDoc);
+	let word = TextParser.getWordAtPosition(pos, curDoc, true);
 
 	let scripttext :Script|null = null;
 
@@ -78,38 +78,23 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 			completionCached = [];
 			posCached = pos;
 		
-			let varPatternNew = /\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\s*(\&|)\s*[a-zA-Z0-9_]+\s*(\=|\;|\,|\))/g;
+			let varPatternNew = /\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\s*(\&|)\s*([a-zA-Z0-9_öÖäÄüÜß]+)\s*(\=|\;|\,|\))/g;
 			let text = scripttext.m_scripttext;
 			let m :RegExpExecArray|null = null;
 			while(m = varPatternNew.exec(text)) {
-		
-				let patternBeginVar = /\b/g
-				patternBeginVar.lastIndex = m.index + 1;
-				m = patternBeginVar.exec(text);
-				if(m) {
-					patternBeginVar.lastIndex++;
-					m = patternBeginVar.exec(text);
-					if(m) {
-						patternBeginVar.lastIndex++;
-						let mEnd = patternBeginVar.exec(text);
-						if(mEnd) {
-							let variable = text.substring(m.index, mEnd.index);
-							if(!alreadyAdded.find((vari) => {
-								if(vari == variable) {
-									return true;
-								}
-							})) {
-
-								alreadyAdded.push(variable);
-								console.log(variable);
-								completionCached.push({
-									label: variable,
-									commitCharacters: ["."],
-									kind: CompletionItemKind.Variable
-								});
-							}
-						}
+				if(!alreadyAdded.find((vari) => {
+					if(vari == m![3]) {
+						return true;
 					}
+				})) {
+					alreadyAdded.push(m[3]);
+					completionCached.push({
+						label: m[3],
+						commitCharacters: ["."],
+						kind: CompletionItemKind.Variable
+					});
+				} else {
+					console.log("already found");
 				}
 			}
 		}

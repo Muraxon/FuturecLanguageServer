@@ -3,16 +3,23 @@ import { Script } from './Script';
 import { CursorPositionInformation, CursorPositionType } from './CursorPositionInformation';
 
 export class TextParser {
-	static getWordAtPosition(pos :Position, doc :TextDocument) :CursorPositionInformation{
+	static getWordAtPosition(pos :Position, doc :TextDocument, functionCompletion :boolean = false) :CursorPositionInformation{
 
 		let offset = doc.offsetAt(pos);
 		let text = doc.getText();
 		let char = text.charAt(offset);
+		if(functionCompletion) {
+			if(char.search(/\s/) >= 0) {
+				offset--;
+				char = text.charAt(offset);
+			}
+		}
 		let charAtPos = char;
 		let isfunction = false;
 		let isParserfunction = false;
 		let isVarFunction = false;
 		let context = "";
+
 	
 		let includescriptOffset = offset;
 
