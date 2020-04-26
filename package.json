@@ -3,7 +3,7 @@
 	"description": "Future C - Languageserver für hausinterne Skriptsprache",
 	"author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
 	"license": "MIT",
-	"version": "1.0.0",
+	"version": "1.0.1",
 	"publisher": "marcel-sotiropoulos",
 	"categories": [],
 	"keywords": [
