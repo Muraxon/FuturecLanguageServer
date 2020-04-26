@@ -94,7 +94,6 @@ Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der ak
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
   ___
 #### Parserfunctions:
-Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserFunctions.gif)
   ___
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
