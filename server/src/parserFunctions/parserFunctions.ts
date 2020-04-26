@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, TextEdit, MarkupContent, MarkupKind } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, TextEdit, MarkupContent, MarkupKind, MarkedString } from 'vscode-languageserver';
 
 export class ParserFunctions {
 
@@ -32,12 +32,13 @@ export class ParserFunctions {
 				} else {
 					docu = result.root.snippet[i].keyword[0];
 				}
+
 				let item :CompletionItem = {
-					label: result.root.snippet[i].keyword[0],
-					documentation: docu,
-					kind: CompletionItemKind.Function,
+					label: <string>result.root.snippet[i].keyword[0],
+					documentation: docu.trim(),
+					kind: CompletionItemKind.Method,
 					insertTextFormat: InsertTextFormat.Snippet,
-					insertText: result.root.snippet[i].text[0]
+					insertText: <string>result.root.snippet[i].text[0]
 				}
 
 				if(result.root.snippet[i].context != undefined) {
@@ -49,16 +50,12 @@ export class ParserFunctions {
 						this.m_CompletionItemFile.push(item);
 					} else if(result.root.snippet[i].context[0] == "S") {
 						this.m_CompletionItemDatabase.push(item);
-						
 					} else if(result.root.snippet[i].context[0] == "CTable") {
 						this.m_CompletionItemTable.push(item);
-						
 					} else if(result.root.snippet[i].context[0] == "CMoney") {
 						this.m_CompletionItemCMoney.push(item);
-						
 					} else if(result.root.snippet[i].context[0] == "CString") {
 						this.m_CompletionItemCString.push(item);
-						
 					} else if(result.root.snippet[i].context[0] == "CDateTime") {
 						this.m_CompletionItemCDateTime.push(item);
 					} else if(result.root.snippet[i].context[0] == "P") {
@@ -68,7 +65,7 @@ export class ParserFunctions {
 						if(item.documentation) {
 							item.documentation = {
 								kind: MarkupKind.Markdown,
-								value: [item.documentation.toString()].join("\n")
+								value: ['```cpp', item.documentation.toString(), '```'].join("\n")
 							}
 						}
 						this.m_CompletionItemConstants.push(item);

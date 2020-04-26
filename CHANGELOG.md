@@ -5,3 +5,10 @@ All notable changes to this project will be documented in this file.
 - Init Release
   - features *as is*
 
+## [1.0.1] - 26.04.2020
+- Added rudimentary support for parser-functions (auto-completion | ***signature-help is coming soon***)
+  - snippet-functionality is possible
+- improved includescriptparsing - prevent loop
+- Added auto-completion for userdefined-functions inside the current script
+
+

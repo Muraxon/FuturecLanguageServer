@@ -41,6 +41,7 @@ import { OnDefinition } from './Events/OnDefinition';
 import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
+import { TextParser } from './TextParser';
 
 
 export let parserFunctions :ParserFunctions = new ParserFunctions();
@@ -84,7 +85,7 @@ connection.onInitialize((params: InitializeParams) => {
 			// Tell the client that the server supports code completion
 			completionProvider: {
 				resolveProvider: false,
-				triggerCharacters: ['.']
+				triggerCharacters: ['.', ':']
 			},
 			hoverProvider: true,
 			referencesProvider: true,
@@ -223,6 +224,15 @@ connection.onNotification("custom/sendParserFunctionXML", (uri :string) => {
 	parserFunctions.buildFunctions(uri);
 
 });
+
+connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPositionParams) :Position => {
+
+	let doc = documents.get(param.textDocument.uri);
+	if(doc) {
+		return TextParser.getScriptStart(doc, param.position)[0];
+	}
+	return param.position;
+})
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.

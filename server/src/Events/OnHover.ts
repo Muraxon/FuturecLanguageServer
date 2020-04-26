@@ -5,6 +5,7 @@ import { GlobalAnalyzer } from '../server';
 
 
 export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :Hover {
+	
 	let hoverString = "";
 	let word :CursorPositionInformation;
 	
@@ -92,7 +93,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 		let mNotVar = notVariableDefinition.exec(word.m_word);
 		if(!mNotVar) {
 
-			let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false);
+			let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true);
 
 			if(script) {
 				try {

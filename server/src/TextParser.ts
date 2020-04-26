@@ -119,12 +119,24 @@ export class TextParser {
 		return info;
 	}
 
+	static getScriptStart(doc :TextDocument, pos :Position, text :string|null = null) :[Position, boolean] {
 
-	static getLine(pos :Position, curDoc :TextDocument) :string {
-		return curDoc.getText({
-			end: {character: 400, line:pos.line},
-			start: {character: 0, line: pos.line}
-		}).trim();
+		if(!text) {
+			text = doc.getText({
+				start: {character: 0, line: 0},
+				end: pos
+			});
+		}
+
+		let m1 = text.lastIndexOf("\nSCRIPT:");
+		let m2 = text.lastIndexOf("\nINSERTINTOSCRIPT:");
+
+		if(m1 > m2) {
+			return [doc.positionAt(m1), false];
+		} else {
+			return [doc.positionAt(m2), true];
+		}
 	}
+
 
 }

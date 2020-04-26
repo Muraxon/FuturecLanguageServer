@@ -17,10 +17,15 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   - [x] alle Referenzen finden (macht das gleiche wie **Definition finden**)
   - [x] **Hovering**
   - [x] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
+  - [x] **Auto-completion** listet Functions auf wenn `Call:` eingegeben wurde
   ___
 - [ ] Parserfunktionen e.g.: `S.Select(...)`
-  - [ ] **Hovering**
   - [ ] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
+  - [x] **Auto-completion**
+    - Unterstützte Tags:
+      - `keyword` - Text der angezeigt wird im UI
+      - `docu` - Zeigt zusätzliche Info zur Funktion an. Wenn nicht vorhanden wird `keyword` als doku angezeigt
+      - `text` - Text der dann eignefügt wird. Der Text unterstützt bei Parserfunktionen die Snippetsyntax
   ___
 - [x] includescripts
   - [x] **goto**
@@ -88,4 +93,10 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
 Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
   ___
-
+#### Parserfunctions:
+Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
+ ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserFunctions.gif)
+  ___
+ ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
+  ___
+ ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionUserFunction.gif)

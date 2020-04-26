@@ -33,7 +33,7 @@ import {
 	TransportKind,
 	Diagnostic,
 	CompletionRequest,
-	CompletionItemKind
+	CompletionItemKind,
 } from 'vscode-languageclient';
 
 export let client: LanguageClient;
@@ -88,7 +88,7 @@ export function activate(context: ExtensionContext) {
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
 					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
 					items.forEach(element => {
-						if(element.kind == CompletionItemKind.Function) {
+						if(element.kind == CompletionItemKind.Method) {
 							element.insertText = new SnippetString(element.insertText.toString());
 						}
 					});
@@ -195,7 +195,7 @@ export function activate(context: ExtensionContext) {
 
 		client.onNotification("custom/getParserXML", async () => {
 			let filename = "";
-			let res2 = await workspace.findFiles("*.xml");
+			let res2 = await workspace.findFiles("scriptautocompletedefs.xml");
 			res2.forEach((value) => {
 				filename = value.toString();
 			});
@@ -357,24 +357,17 @@ export function activate(context: ExtensionContext) {
 	context.subscriptions.push(disp);
 
 	let disp2 = commands.registerCommand("jump.to.start.of.script", () => {
+		let param = client.code2ProtocolConverter.asTextDocumentPositionParams(window.activeTextEditor.document, new Position(window.activeTextEditor.selection.start.line,window.activeTextEditor.selection.start.character))
+		client.sendRequest("custom/jump.to.start.of.script", param).then((pos :Position) => {
+			try {
+				let position = new Position(pos.line, pos.character);
+				let range = new Range(position, position);
 
-		let posStart = new Position(0, 0);
-		let posEnd = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character)
-
-		let range = new Range(posStart, posEnd);
-		
-		let text = window.activeTextEditor.document.getText(range);
-		let m = text.lastIndexOf("\nSCRIPT:");
-		if(m < 0) {
-			m = text.lastIndexOf("\nINSERTINTOSCRIPT:");
-		}
-		if(m >= 0) {
-
-			let pos = window.activeTextEditor.document.positionAt(m);
-
-			let newRange = new Range(pos, pos);
-			window.activeTextEditor.revealRange(newRange);
-		}
+				window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
+			} catch (error) {
+				console.log(error);
+			}
+		});
 	});
 	context.subscriptions.push(disp2);
 
@@ -382,6 +375,7 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 	window.showInformationMessage("activation finished");
+	
 };
 
 

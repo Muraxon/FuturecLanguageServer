@@ -101,14 +101,23 @@ export class Analyzer {
 	getIncludeScriptForCurrentScript(script :Script, _NotManagedDocs :Map<string, TextDocument>) {
 		let scriptNumbers = this.getincludeScriptsNumbers(script.m_scripttext);
 		let scriptNumbersOld :number[]= [];
-		while(scriptNumbers) {
+		let loop = false;
+		while(scriptNumbers && !loop) {
 			let includeScripts = this.getScripts(scriptNumbers, _NotManagedDocs);
 			if(includeScripts) {
 				script.addScripts(...includeScripts);
 			} else { break; }
 
-			scriptNumbersOld = scriptNumbers;
+			scriptNumbersOld.push(...scriptNumbers);
 			scriptNumbers = this.getincludeScriptsNumbers(script.m_scripttext);
+			if(scriptNumbers) {
+				scriptNumbers.forEach(element => {
+					if(scriptNumbersOld.includes(element) || loop) {
+						loop = true;
+						return;
+					}
+				});
+			}
 		}	
 	}
 
@@ -121,14 +130,15 @@ export class Analyzer {
 		let subscript = completeDocText.substring(0, offset);
 		
 		let patternEndLine = /\n/g; 
-		let m = subscript.lastIndexOf("\nSCRIPT:");
+
+		let posScriptTemp = TextParser.getScriptStart(doc, CursorPos, subscript);
 		let scriptNumberStart = 8;
-		if(m < 0) {
+		if(posScriptTemp[1] === true) {
 			scriptNumberStart = 18;
-			m = subscript.lastIndexOf("\nINSERTINTOSCRIPT:");
 		}
-		let posScript = doc.positionAt(m);
-		posScript.line++;
+		let posScript = posScriptTemp[0];
+
+		let m = doc.offsetAt(posScript);
 
 		patternEndLine.lastIndex = m + 1;
 		let ex1 = patternEndLine.exec(subscript);
@@ -140,7 +150,8 @@ export class Analyzer {
 			patternNumberEnd.lastIndex = m + scriptNumberStart + 1;
 			let scriptNumberEnd = patternNumberEnd.exec(completeDocText);
 			if(scriptNumberEnd) {
-				let scriptNumber = parseInt(completeDocText.substring(m + scriptNumberStart, scriptNumberEnd.index));
+				let number = completeDocText.substring(m + scriptNumberStart, scriptNumberEnd.index);
+				let scriptNumber = parseInt(number);
 				let ex :RegExpExecArray|null = null;
 				let index = doc.offsetAt(CursorPos);
 				if(!toPos) {
