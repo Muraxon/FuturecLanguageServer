@@ -121,7 +121,7 @@ export class TextParser {
 			type = CursorPositionType.VARIABLE;
 		}
 
-		let info :CursorPositionInformation = new CursorPositionInformation(word, charAtPos, type, context);
+		let info :CursorPositionInformation = new CursorPositionInformation(word.trim(), charAtPos.trim(), type, context.trim());
 
 		return info;
 	}

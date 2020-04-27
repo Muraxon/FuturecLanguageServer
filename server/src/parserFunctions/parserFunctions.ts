@@ -71,7 +71,7 @@ export class ParserFunctions {
 						this.m_CompletionItemConstants.push(item);
 					}
 				} else {
-					item.kind = CompletionItemKind.Constant;
+					item.kind = CompletionItemKind.Snippet;
 					this.m_CompletionItemConstants.push(item);
 				}
 

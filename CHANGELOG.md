@@ -11,4 +11,7 @@ All notable changes to this project will be documented in this file.
 - improved includescriptparsing - prevent loop
 - Added auto-completion for userdefined-functions inside the current script
 
+## [1.0.2] - 27.04.2020
+- fixed issue when autocompletion should trigger, but doesn't
+
 

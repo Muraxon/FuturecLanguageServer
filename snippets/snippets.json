@@ -1,13 +1,4 @@
 {
-	"foreachrow": {
-		"prefix": "foreachrow",
-		"body": [
-			"foreachrow(${1:tTabelle}; ${2:nRow}) {",
-			"\t$0",
-			"};"
-		],
-		"description": "legt eine foreachrow an"
-	},
 	"New Script": {
 		"prefix": "Create Script",
 		"body": [

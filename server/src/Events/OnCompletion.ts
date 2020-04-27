@@ -45,7 +45,7 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 				} 
 			}
 		}
-	} else if(word.m_word == "Call:" || word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
+	} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
 		let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\(.*\).*$/gm;
 		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 		if(scripttext) {

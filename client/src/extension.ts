@@ -76,9 +76,12 @@ export function activate(context: ExtensionContext) {
 			provideCompletionItem: async (doc, pos, context) => {
 				
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
-				let text = doc.getText(rangeAtPos);
+				let text = "";
+				if(rangeAtPos) {
+					text = doc.getText(rangeAtPos);
+				}
 				let number = parseInt(text);
-				if(!isNaN(number)) {
+				if(!isNaN(number) && number > 30) {
 					let line = doc.lineAt(pos);
 					if(line.text.search(/\bS\.(Select|SelectRecord|(Set|Add)(INT|MONEY|DOUBLE))/) >= 0) {
 						commands.executeCommand("Show.columns", number);
@@ -88,7 +91,7 @@ export function activate(context: ExtensionContext) {
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
 					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
 					items.forEach(element => {
-						if(element.kind == CompletionItemKind.Method) {
+						if(element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet) {
 							element.insertText = new SnippetString(element.insertText.toString());
 						}
 					});
