@@ -71,7 +71,7 @@
 				"when": "editorTextFocus",
 				"key": "Ctrl+numpad0",
 				"args": {
-					"langId": "cpp",
+					"langId": "futurec",
 					"name": "New Function"
 				}
 			},
@@ -81,7 +81,7 @@
 				"when": "editorTextFocus",
 				"key": "Ctrl+numpad1",
 				"args": {
-					"langId": "cpp",
+					"langId": "futurec",
 					"name": "New Script"
 				}
 			},
@@ -91,7 +91,7 @@
 				"when": "editorTextFocus",
 				"key": "Ctrl+numpad2",
 				"args": {
-					"langId": "cpp",
+					"langId": "futurec",
 					"name": "New Changecomment"
 				}
 			}, {
