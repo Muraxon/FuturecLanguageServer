@@ -13,7 +13,7 @@
 		"vscode": "^1.33.0"
 	},
 	"activationEvents": [
-		"onLanguage:cpp"
+		"onLanguage:futurec"
 	],
 	"repository": {
 		"type": "git",
@@ -44,16 +44,23 @@
 				}
 			}
 		},
+		"languages": [
+			{
+			  "id": "futurec",
+			  "extensions": [".cpp"],
+			  "configuration": "./language-configuration.json"
+			}
+		],
 		"grammars": [
 			{
-				"language": "cpp",
+				"language": "futurec",
 				"scopeName": "source.ffscript",
 				"path": "./syntaxes/ffscript.tmLanguage.json"
 			}
 		],
 		"snippets": [
 			{
-				"language": "cpp",
+				"language": "futurec",
 				"path": "./snippets/snippets.json"
 			}
 		],

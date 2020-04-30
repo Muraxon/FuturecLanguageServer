@@ -1,4 +1,4 @@
-import { TextDocument, CompletionItem, Position, CompletionItemKind } from 'vscode-languageserver';
+import { TextDocument, CompletionItem, Position, CompletionItemKind, MarkupKind } from 'vscode-languageserver';
 import { GlobalAnalyzer, parserFunctions } from '../server';
 import { TextParser } from "./../TextParser";
 import { Script } from '../Script';
@@ -90,8 +90,8 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 					alreadyAdded.push(m[3]);
 					completionCached.push({
 						label: m[3],
-						commitCharacters: ["."],
-						kind: CompletionItemKind.Variable
+						kind: CompletionItemKind.Variable,
+						detail: m[1]
 					});
 				} else {
 					console.log("already found");

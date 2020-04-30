@@ -22,10 +22,11 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
 - [ ] Parserfunktionen e.g.: `S.Select(...)`
   - [ ] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
   - [x] **Auto-completion**
-    - Unterstützte Tags:
+    - Unterstützte Tags (Markdown):
       - `keyword` - Text der angezeigt wird im UI
-      - `docu` - Zeigt zusätzliche Info zur Funktion an. Wenn nicht vorhanden wird `keyword` als doku angezeigt
+      - `notes` - Zeigt zusätzliche Info zur Funktion an. Wenn nicht vorhanden wird `keyword` als Dokumentation angezeigt
       - `text` - Text der dann eignefügt wird. Der Text unterstützt bei Parserfunktionen die Snippetsyntax
+      - `returnvalue` - Gibt den Rückgabewert an
   ___
 - [x] includescripts
   - [x] **goto**

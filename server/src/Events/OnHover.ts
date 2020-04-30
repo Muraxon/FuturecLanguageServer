@@ -79,7 +79,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 
 		if(hoverString.length > 0) {
 			hoverString = [
-				'```cpp',
+				'```futurec',
 				hoverString,
 				'```'
 			].join("\n");
@@ -129,7 +129,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 				if(hoverString.length > 0) {
 					hoverString = [
 						'## Usages: ' + word.m_word,
-						'```cpp',
+						'```futurec',
 						hoverString,
 						'```'
 					].join("\n");

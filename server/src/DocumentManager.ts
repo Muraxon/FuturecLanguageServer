@@ -42,7 +42,7 @@ export class DocumentManager {
 	addFromFile(...initDocs :string[]) {
 		initDocs.forEach(element => {
 			if(!this.m_Documents.has(element)) {
-				let wholeFile = readFileSync(uriToFilePath(element)!, "ascii");
+				let wholeFile = readFileSync(uriToFilePath(element)!, "latin1");
 				let textDoc :TextDocument = TextDocument.create(element, "de", 1, wholeFile);
 
 				

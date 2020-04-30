@@ -27,15 +27,22 @@ export class ParserFunctions {
 			while (result.root.snippet[i]) {
 
 				let docu = "";
-				if(result.root.snippet[i].docu) {
-					docu = result.root.snippet[i].docu[0];
+				if(result.root.snippet[i].notes) {
+					docu = result.root.snippet[i].notes[0];
 				} else {
 					docu = result.root.snippet[i].keyword[0];
 				}
 
+				if(result.root.snippet[i].returnvalue) {
+					docu = "`return " + <string>result.root.snippet[i].returnvalue[0] + "`" + "\n\n" + docu;
+				}
+
 				let item :CompletionItem = {
 					label: <string>result.root.snippet[i].keyword[0],
-					documentation: docu.trim(),
+					documentation: {
+						kind: MarkupKind.Markdown,
+						value: docu
+					},
 					kind: CompletionItemKind.Method,
 					insertTextFormat: InsertTextFormat.Snippet,
 					insertText: <string>result.root.snippet[i].text[0]
@@ -62,12 +69,6 @@ export class ParserFunctions {
 						this.m_CompletionItemPrinter.push(item);
 					} else {
 						item.kind = CompletionItemKind.Variable;
-						if(item.documentation) {
-							item.documentation = {
-								kind: MarkupKind.Markdown,
-								value: ['```cpp', item.documentation.toString(), '```'].join("\n")
-							}
-						}
 						this.m_CompletionItemConstants.push(item);
 					}
 				} else {

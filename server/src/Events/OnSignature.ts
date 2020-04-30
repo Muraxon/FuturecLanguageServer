@@ -126,7 +126,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 							let markContentSignature :MarkupContent = {
 								kind: "markdown",
 								value: [
-									'```cpp',
+									'```futurec',
 									parameterContent,
 									'',
 									signatureDoku,
