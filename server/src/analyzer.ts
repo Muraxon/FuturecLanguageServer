@@ -24,24 +24,11 @@ export class Analyzer {
 	getincludeScriptsNumbers(script :string) :number[]|null {
 		let scripts :number[] = [];
 
-		let pattern = /\bincludescript\s+[0-9]+\b/g;
-		let patternScript = /[0-9]+/g;
-		let patternEOF = /\n/g;
+		let pattern = /\bincludescript\s+([0-9]+)\b/g;
 
 		let m :RegExpExecArray|null;
 		while(m = pattern.exec(script)) {
-			patternScript.lastIndex = m.index;
-			m = patternScript.exec(script);
-			if(m) {
-				patternEOF.lastIndex = m.index;
-				let m2 = patternEOF.exec(script);
-				if(m2) {
-					scripts.push(parseInt(script.substr(m.index, m2.index - m.index)));
-				}
-				else {
-					scripts.push(parseInt(script.substr(m.index)));
-				}
-			}
+			scripts.push(parseInt(m[1]));
 		}
 		if(scripts.length > 0) {
 			return scripts;

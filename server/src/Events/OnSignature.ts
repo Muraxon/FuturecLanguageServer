@@ -52,6 +52,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 				let DocumentText = value.getText();
 				let m :RegExpExecArray|null = null;
 				while(m = pattern.exec(DocumentText)) {
+					let returnVal = m[1];
 					signatureDoku = "";
 					parameterInfo = [];
 					parameterContent = "";
@@ -134,7 +135,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 								].join('\n')
 							}
 							signatureInformation.push({
-								label: foundFunction,
+								label: returnVal + " " + foundFunction,
 								documentation: markContentSignature,
 								parameters: parameterInfo
 							});

@@ -103,18 +103,13 @@ export class TextParser {
 			type = CursorPositionType.PARSER_FUNCTION;
 		}
 		else if(word == "includescript") {
-			let pattern = /[0-9]+/g;
+			let pattern = /([0-9]+)/g;
 			pattern.lastIndex = includescriptOffset;
 
 			let m = pattern.exec(text);
 			if(m) {
-				let patternEnd = /\b/g;
-				patternEnd.lastIndex = m.index + 1;
-				let m2 = patternEnd.exec(text);
-				if(m2) {
-					word = text.substring(m.index, m2.index);
-					type = CursorPositionType.INCLUDESCRIPT;
-				} else { type = CursorPositionType.ERROR; }
+				word = <string>m[1];
+				type = CursorPositionType.INCLUDESCRIPT;
 			} else { type = CursorPositionType.ERROR; }
 		}
 		else {

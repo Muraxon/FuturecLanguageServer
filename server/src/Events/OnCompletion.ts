@@ -33,7 +33,6 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 			let m = varPattern.exec(scripttext.m_scripttext);
 			
 			if(m) {
-				
 				if(m[1] == "CString") {
 					return parserFunctions.getCStringFunctions(pos);
 				} else if(m[1] == "CTable") {
@@ -46,7 +45,7 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 			}
 		}
 	} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
-		let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\(.*\).*$/gm;
+		let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\((.*)\).*$/gm;
 		scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 		if(scripttext) {
 			let completionFunction :CompletionItem[] = [];
@@ -58,7 +57,11 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 					completionFunction.push({
 						label: <string>m[2],
 						commitCharacters: ["("],
-						kind: CompletionItemKind.Function
+						kind: CompletionItemKind.Function,
+						documentation: {
+							kind: MarkupKind.Markdown,
+							value: '`@return ' + <string>m[1] + '`' + '\n\n' + m[3]
+						}
 					});
 				}
 			}

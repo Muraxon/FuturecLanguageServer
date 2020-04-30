@@ -27,7 +27,9 @@ import {
 	ExecuteCommandRequest,
 	CompletionParams,
 	CompletionTriggerKind,
-	CompletionList
+	CompletionList,
+	TextEdit,
+	DocumentLink
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
