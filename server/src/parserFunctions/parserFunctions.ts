@@ -1,7 +1,8 @@
 import { readFileSync } from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, TextEdit, MarkupContent, MarkupKind, MarkedString } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation } from 'vscode-languageserver';
+import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
 
 export class ParserFunctions {
 
@@ -16,6 +17,8 @@ export class ParserFunctions {
 	m_CompletionItemCDateTime :CompletionItem[] = [];
 	m_CompletionItemConstants :CompletionItem[] = [];
 
+	m_FunctionSignatureMap :Map<string,SignatureInformation> = new Map();
+
 	constructor() {}
 
 	async buildFunctions(uri :string) {
@@ -27,14 +30,18 @@ export class ParserFunctions {
 			while (result.root.snippet[i]) {
 
 				let docu = "";
+				let docuParameter = "";
 				if(result.root.snippet[i].notes) {
 					docu = result.root.snippet[i].notes[0];
+					docuParameter = docu;
 				} else {
 					docu = result.root.snippet[i].keyword[0];
 				}
 
+				let returnValue = "";
 				if(result.root.snippet[i].returnvalue) {
-					docu = "`return " + <string>result.root.snippet[i].returnvalue[0] + "`" + "\n\n" + docu;
+					returnValue = <string>result.root.snippet[i].returnvalue[0];
+					docu = "`return " + this.getMappedReturnValue(returnValue) + "`" + "\n\n" + docu;
 				}
 
 				let item :CompletionItem = {
@@ -46,6 +53,36 @@ export class ParserFunctions {
 					kind: CompletionItemKind.Method,
 					insertTextFormat: InsertTextFormat.Snippet,
 					insertText: <string>result.root.snippet[i].text[0]
+				}
+
+				if(result.root.snippet[i].signature) {
+					let signature = <string>result.root.snippet[i].signature[0];
+					let parameter = signature.split(",");
+					
+					let ParameterInfo :ParameterInformation[] = [];
+					let ParameterStringComplete = "";
+					parameter.forEach(element => {
+						if(ParameterStringComplete.length > 0) { ParameterStringComplete += "\n"; }
+						ParameterStringComplete += element.trim();
+
+						ParameterInfo.push({
+							label: element.trim(),
+							documentation: {
+								kind: MarkupKind.Markdown,
+								value: 'Current: **' + element.trim() + '**'
+							}
+						});
+					});
+					if(!this.m_FunctionSignatureMap.has(<string>result.root.snippet[i].keyword[0])) {
+						this.m_FunctionSignatureMap.set(<string>result.root.snippet[i].keyword[0], {
+							label: this.getMappedReturnValue(returnValue) + " " + <string>result.root.snippet[i].keyword[0],
+							documentation: {
+								kind: MarkupKind.Markdown,
+								value: ['```futurec', ParameterStringComplete.trim(), "", docuParameter, '```'].join("\n")
+							},
+							parameters: ParameterInfo
+						});
+					}
 				}
 
 				if(result.root.snippet[i].context != undefined) {
@@ -82,6 +119,35 @@ export class ParserFunctions {
 			
 		});
 
+	}
+
+	getMappedReturnValue(val :string) :string{
+		if(val == "TYPE_CSTRING") {
+			return "CString";
+		} else if(val == "TYPE_INT") {
+			return "int";
+		} else if(val == "TYPE_CTABLE") {
+			return "CTable";
+		} else if(val == "TYPE_MONEY") {
+			return "CMoney";
+		} else if(val == "TYPE_DATETIME") {
+			return "CDateTime";
+		} else if(val == "TYPE_DOUBLE") {
+			return "double";
+		} else if(val == "TYPE_BOOL") {
+			return "BOOL";
+		} else if(val == "void") {
+			return "void";
+		}
+		return "undefined";
+	}
+
+	getSignature(word :CursorPositionInformation) :SignatureInformation | undefined {
+		console.log(word);
+		if(this.m_FunctionSignatureMap.has(word.m_word)) {
+			return this.m_FunctionSignatureMap.get(word.m_word);
+		}
+		return undefined;
 	}
 
 	adjustCompletionItem(items :CompletionItem[], pos :Position) {

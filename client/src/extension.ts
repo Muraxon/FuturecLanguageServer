@@ -90,9 +90,19 @@ export function activate(context: ExtensionContext) {
 
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
 					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
+					
+					let config = workspace.getConfiguration("future_c");
+					console.log(config);
+					let completion = config.get<string>("signaturhilfeBeiParserfunktionen");
+					console.log(completion);
+
 					items.forEach(element => {
-						if(element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet) {
-							element.insertText = new SnippetString(element.insertText.toString());
+						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet)) {
+							if(completion == "Snippet") {
+								element.insertText = new SnippetString(element.insertText.toString());
+							} else if(completion == "Signatur") {
+								element.insertText = element.label;
+							}
 						}
 					});
 					return new CompletionList(items, false);
@@ -118,7 +128,9 @@ export function activate(context: ExtensionContext) {
 					let i = lineBeforeCursor.split(",").length - 1;
 					let exit = lineBeforeCursor.search(/\b[cC]all:.*\(.*\)/);
 					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
-					if (exit >= 0 || exit2 < 0 || i >= x.signatures[0].parameters.length) {
+					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
+					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
+					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (i >= x.signatures[0].parameters.length)) {
 						x = null;
 						return;
 					}
@@ -179,8 +191,8 @@ export function activate(context: ExtensionContext) {
 
 	// Create the language client and start the client.
 	client = new LanguageClient(
-		'Future_C_Language_Server',
-		'Language Server für unsere Hauinterne Skriptsprache',
+		'Future C',
+		'Language Server für unsere Hausinterne Skriptsprache',
 		serverOptions,
 		clientOptions
 	);

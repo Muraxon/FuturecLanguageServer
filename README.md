@@ -22,10 +22,11 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
 - [ ] Parserfunktionen e.g.: `S.Select(...)`
   - [ ] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
   - [x] **Auto-completion**
-    - Unterstützte Tags (Markdown):
+    - Unterstützte Tags:
       - `keyword` - Text der angezeigt wird im UI
       - `notes` - Zeigt zusätzliche Info zur Funktion an. Wenn nicht vorhanden wird `keyword` als Dokumentation angezeigt
       - `text` - Text der dann eignefügt wird. Der Text unterstützt bei Parserfunktionen die Snippetsyntax
+      - `parameter` - Signaturliste für die eingegebene Methode
       - `returnvalue` - Gibt den Rückgabewert an
   ___
 - [x] includescripts
@@ -100,3 +101,18 @@ Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der ak
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
   ___
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionUserFunction.gif)
+
+ ### Config:
+- Im Optionsmenü [`Ctrl + ,`] kann zwischen **Snippet** und **Signatur** gewählt werden
+  - Signatur:
+    - Einstellung:
+      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSignature.png)
+    - Usage:
+      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSignatureHelp.gif)
+  - Snippet:
+    - Einstellung:
+      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSnippet.png)
+    - Usage:
+      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSignatureHelp.gif)
+
+ 

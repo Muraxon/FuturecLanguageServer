@@ -121,14 +121,14 @@ connection.onInitialized(() => {
 
 // The example settings
 interface ExampleSettings {
-	maxNumberOfProblems: number;
+	signaturhilfeBeiParserfunktionen: string;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
 const defaultSettings: ExampleSettings = { 
-	maxNumberOfProblems: 1000
+	signaturhilfeBeiParserfunktionen: "Snippet"
 };
 
 let globalSettings: ExampleSettings = defaultSettings;
@@ -144,7 +144,7 @@ connection.onDidChangeConfiguration(change => {
 		documentSettings.clear();
 	} else {
 		globalSettings = <ExampleSettings>(
-			(change.settings.Future_C_Language_Server || defaultSettings)
+			(change.settings.future_c || defaultSettings)
 		);
 	}
 	console.log("onDidChangeConfiguration");
@@ -162,7 +162,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
-			section: 'Future_C_Language_Server'
+			section: 'future_c'
 		});
 		documentSettings.set(resource, result);
 	}

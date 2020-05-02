@@ -13,7 +13,10 @@ export class CursorPositionInformation {
 	}
 
 	isValid() :boolean {
-		if((this.m_type == CursorPositionType.VARIABLE) || (this.m_type == CursorPositionType.USERDEFINED_FUNCTION) || (this.m_type == CursorPositionType.PARSER_FUNCTION) || (this.m_type == CursorPositionType.INCLUDESCRIPT)) {
+		if((this.m_type == CursorPositionType.VARIABLE) || 
+		(this.m_type == CursorPositionType.USERDEFINED_FUNCTION) || 
+		(this.m_type == CursorPositionType.PARSER_FUNCTION) || 
+		(this.m_type == CursorPositionType.INCLUDESCRIPT)) {
 			return true;
 		}
 		return false;
