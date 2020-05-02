@@ -113,6 +113,6 @@ Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der ak
     - Einstellung:
       ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSnippet.png)
     - Usage:
-      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSignatureHelp.gif)
+      ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/configSnippetHelp.gif)
 
  
