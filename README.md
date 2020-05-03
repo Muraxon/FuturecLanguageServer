@@ -1,8 +1,8 @@
 # Future-C Language-Server:
 
 Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter ist, dass das Arbeiten in den Skripts im Laufe der Zeit extrem erleichtert wird.
-- Bitte durchlesen und etwaige **Wünsche** / **Anregungen** mir mitteilen
-- Bei Fehlern bitte mir melden
+- Bitte durchlesen und etwaige [Wünsche / Anregungen](https://github.com/Muraxon/FuturecLanguageServer/issues) gleich erstellen
+- Bei Fehlern bitte gleich ein [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues) erstellen
 - Die Extension wird nur bei Dateien mit **.cpp**-Dateien aktiviert
   ___
 - [Repository](https://github.com/Muraxon/FuturecLanguageServer)
@@ -26,7 +26,7 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
       - `keyword` - Text der angezeigt wird im UI
       - `notes` - Zeigt zusätzliche Info zur Funktion an. Wenn nicht vorhanden wird `keyword` als Dokumentation angezeigt
       - `text` - Text der dann eignefügt wird. Der Text unterstützt bei Parserfunktionen die Snippetsyntax
-      - `parameter` - Signaturliste für die eingegebene Methode
+      - `signature` - Signaturliste für die eingegebene Methode
       - `returnvalue` - Gibt den Rückgabewert an
   ___
 - [x] includescripts
@@ -93,16 +93,16 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   ___
 #### Datenbankspalten:
 Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
+  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
   ___
 #### Parserfunctions:
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserFunctions.gif)
+  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserFunctions.gif)
   ___
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
+  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
   ___
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionUserFunction.gif)
+  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionUserFunction.gif)
 
- ### Config:
+### Config:
 - Im Optionsmenü [`Ctrl + ,`] kann zwischen **Snippet** und **Signatur** gewählt werden
   - Signatur:
     - Einstellung:
