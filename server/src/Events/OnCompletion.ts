@@ -60,7 +60,7 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 						kind: CompletionItemKind.Function,
 						documentation: {
 							kind: MarkupKind.Markdown,
-							value: '`@return ' + <string>m[1] + '`' + '\n\n' + m[3]
+							value: '`return ' + <string>m[1] + '`' + '\n\n' + m[3]
 						}
 					});
 				}
