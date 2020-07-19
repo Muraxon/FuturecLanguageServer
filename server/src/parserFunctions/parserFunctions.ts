@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
 
 export class ParserFunctions {
@@ -16,6 +16,8 @@ export class ParserFunctions {
 	m_CompletionItemCMoney :CompletionItem[] = [];
 	m_CompletionItemCDateTime :CompletionItem[] = [];
 	m_CompletionItemConstants :CompletionItem[] = [];
+
+	m_FunctionHoverStrings :Map<string,string> = new Map();
 
 	m_FunctionSignatureMap :Map<string,SignatureInformation> = new Map();
 
@@ -55,11 +57,14 @@ export class ParserFunctions {
 						insertText: <string>result.root.snippet[i].text[0]
 					}
 	
+					let signatureString = "";
 					if(result.root.snippet[i].signature) {
-						let signature = <string>result.root.snippet[i].signature[0];
-						signature = signature.trim();
-						if(signature.length > 0) {
-							let parameter = signature.split(",");
+						signatureString = <string>result.root.snippet[i].signature[0];
+
+						
+						signatureString = signatureString.trim();
+						if(signatureString.length > 0) {
+							let parameter = signatureString.split(",");
 							let ParameterInfo :ParameterInformation[] = [];
 							let ParameterStringComplete = "";
 							parameter.forEach(element => {
@@ -85,6 +90,13 @@ export class ParserFunctions {
 								});
 							}
 						} 
+					}
+
+					if(!this.m_FunctionHoverStrings.has(signatureString)) {
+						if(signatureString.length <= 0) {
+							signatureString = "(void)";
+						}
+						this.m_FunctionHoverStrings.set(item.label.trim(),  "returns " + this.getMappedReturnValue(returnValue) + "\n" + signatureString.trim());
 					}
 	
 					if(result.root.snippet[i].context != undefined) {
@@ -146,8 +158,11 @@ export class ParserFunctions {
 		return "undefined (" + val + ")";
 	}
 
+	getHover(key :string) :string | undefined {
+		return this.m_FunctionHoverStrings.get(key);
+	}
+
 	getSignature(word :CursorPositionInformation) :SignatureInformation | undefined {
-		console.log(word);
 		if(this.m_FunctionSignatureMap.has(word.m_word)) {
 			return this.m_FunctionSignatureMap.get(word.m_word);
 		}
@@ -159,7 +174,7 @@ export class ParserFunctions {
 		// 	element.textEdit = TextEdit.insert(pos, <string>element.documentation);
 		// 	element.insertTextFormat = InsertTextFormat.Snippet;
 		// });
-		// console.log(items);
+		// 
 	}
 
 	getDialogFunctions(pos :Position) {

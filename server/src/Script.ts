@@ -28,4 +28,12 @@ export class Script {
 			this.m_includeScript.push(element.m_scriptnumber);
 		});
 	}
+
+	filterBranches() {
+		
+
+
+
+
+	}
 }

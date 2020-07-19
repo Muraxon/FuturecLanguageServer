@@ -19,8 +19,8 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   - [x] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
   - [x] **Auto-completion** listet Functions auf wenn `Call:` eingegeben wurde
   ___
-- [ ] Parserfunktionen e.g.: `S.Select(...)`
-  - [ ] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
+- [x] Parserfunktionen e.g.: `S.Select(...)`
+  - [x] **Signaturhilfe** zeigt alle und gerade aktuellen Parameter an
   - [x] **Auto-completion**
     - Unterstützte Tags:
       - `keyword` - Text der angezeigt wird im UI
@@ -37,7 +37,7 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   - [x] **Hovering** Zeigt alle Usages im aktuellen Skript an - inklusive includescripts
   ___
 - [ ] Hooks
-  - [ ] Zu Kundenhook springen
+  - [x] Zu Kundenhook springen
   - [ ] Von Kundenhook zu Hook in Hauptskript springen
   - [ ] Hook für Kunden erstellen
   ___
@@ -46,8 +46,9 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   - [ ] Where-Strings einfach erweiterbar
   ___
 - [ ] Completion
-  - [ ] Autocompletion bei Funkionen (Parser oder Userdefined)
-  - [ ] Variablen-autocompletion
+  - [x] Autocompletion bei Funkionen (Parser oder Userdefined)
+  - [x] Variablen-autocompletion
+  - [ ] Variablen - branch sensitive completion
   ___
 - [ ] Diagnostics
   - [ ] Skriptweit

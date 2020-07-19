@@ -75,7 +75,7 @@
 		"functionDocumentation":{
 			"name":"comment.block.documentation.ffscript",
 			"begin": "^\\s*ENDSCRIPT\\b",
-			"end": "^\\s*(SCRIPT|INSERTINTOSCRIPT).+$",
+			"end": "^\\s*(SCRIPT|INSERTINTOSCRIPT|ADDTOSCRIPT).+$",
 			"captures": {
 				"0": {
 					"name":"markup.bold"
@@ -86,7 +86,7 @@
 			}]
 		},
 		"clientFunction": {
-			"begin": "\\b(D|S|F|H)\\b",
+			"begin": "\\b(D|S|F|H|P)\\b",
 			"end": "\\.",
 			"beginCaptures": {
 				"0": { "name": "entity.name.class.ffscript" }

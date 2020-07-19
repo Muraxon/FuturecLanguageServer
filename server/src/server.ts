@@ -29,7 +29,8 @@ import {
 	CompletionTriggerKind,
 	CompletionList,
 	TextEdit,
-	DocumentLink
+	DocumentLink,
+	TextDocumentChangeEvent
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
@@ -62,6 +63,9 @@ let hasDiagnosticRelatedInformationCapability: boolean = false;
 let paramsimpl:InitializeParams;
 export let GlobalAnalyzer = new Analyzer();
 let GlobalManager :DocumentManager = new DocumentManager();
+
+
+export let CurrentCompletionCharacter :string|undefined = undefined;
 
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
@@ -113,7 +117,7 @@ connection.onInitialized(() => {
 			connection.console.log('Workspace folder change event received.');
 		});
 	}
-	console.log("onInitialized");
+	
 	GlobalManager.clear();
 	connection.sendNotification("custom/getFilenames");
 	connection.sendNotification("custom/getParserXML");
@@ -147,7 +151,7 @@ connection.onDidChangeConfiguration(change => {
 			(change.settings.future_c || defaultSettings)
 		);
 	}
-	console.log("onDidChangeConfiguration");
+	
 	// Revalidate all open text documents
 	connection.sendNotification("custom/getFilenames");
 	documents.all().forEach(validateTextDocument);
@@ -182,12 +186,12 @@ documents.onDidOpen(e => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent(change => {
+documents.onDidChangeContent((change :TextDocumentChangeEvent) => {
 	validateTextDocument(change.document);
 });
 
 connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
-	console.log("custom/GetDiagnostic");
+	
 
 
 	let doc = documents.get(param2);
@@ -203,11 +207,7 @@ connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :stri
 
 connection.onNotification("custom/sendFilename", (uris: string[]) => {
 	console.log("onNotification custom/sendFilename")
-	//console.log(documents);
-	//console.log(notManageddocuments);
 	GlobalManager.clear();
-
-	//console.log(documents);
 	uris.forEach(element => {
 		let doc = documents.get(element);
 		if(doc) {
@@ -217,8 +217,6 @@ connection.onNotification("custom/sendFilename", (uris: string[]) => {
 			GlobalManager.addFromFile(element);
 		}
 	});
-	//console.log(documents);
-	//console.log(notManageddocuments);
 });
 
 connection.onNotification("custom/sendParserFunctionXML", (uri :string) => {
@@ -282,7 +280,6 @@ connection.onHover((params :TextDocumentPositionParams, token): Hover => {
 connection.onSignatureHelp((params, token): SignatureHelp => {
 	let doc = documents.get(params.textDocument.uri);
 	let fnc :SignatureInformation[] = [];
-	//console.log("onSignatureHelp");
 	if(doc) {
 		let signatureHelp = <SignatureHelp>GlobalManager.doWithDocuments(documents, doc, params.position, OnSignature);
 		return signatureHelp;
@@ -323,6 +320,10 @@ connection.onCompletion((param: CompletionParams, token): CompletionItem[] | Com
 	let doc = documents.get(param.textDocument.uri);
 
 	let completionitems :CompletionItem[] = new Array();
+
+	if(param.context) {
+		CurrentCompletionCharacter = param.context.triggerCharacter;
+	}
 
 	if(doc) {
 		
@@ -398,8 +399,6 @@ connection.onCodeLens((params, token):CodeLens[] => {
 
 			}
 		}
-	} else {
-		console.log("do nothing");
 	}
 
 	return codelens;

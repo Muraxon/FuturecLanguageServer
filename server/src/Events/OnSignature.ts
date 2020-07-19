@@ -63,7 +63,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 						try {
 							m2 = new RegExp(foundFunction, "g");
 						} catch (error) {
-							console.log(error);
+							
 						}
 						if(!m2) {return;}
 						m2.lastIndex = m.index;

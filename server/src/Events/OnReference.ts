@@ -11,7 +11,7 @@ export function OnReference(docs :Map<string, TextDocument>, curDoc :TextDocumen
 		if(word.m_type != CursorPositionType.INCLUDESCRIPT) {
 			let functionname = word.getFunctionname();
 			if(functionname) {
-				loc = findReferencesOfUserdefinedFunction(docs, functionname);
+				loc = findReferencesScriptOrFunction(docs, functionname);
 			}
 		}
 		else {
@@ -21,11 +21,11 @@ export function OnReference(docs :Map<string, TextDocument>, curDoc :TextDocumen
 	return loc
 }
 
-function findReferencesOfUserdefinedFunction(_docs :Map<string, TextDocument>, functionName :string) :Location[] {
+function findReferencesScriptOrFunction(_docs :Map<string, TextDocument>, functionName :string) :Location[] {
 	let loc :Location[] = new Array();
 
 	_docs.forEach((value:TextDocument, key:string) => {
-		let pattern:RegExp = new RegExp("FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + functionName + "\\(.*\\)", "g");
+		let pattern:RegExp = new RegExp("(FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + functionName + "\\(.*\\)|INSERTINTOSCRIPT:[0-9]+,\\s*\\/\\/" + functionName + ")", "g");
 		
 		let m: RegExpExecArray | null;
 		let DocumentText = value.getText();

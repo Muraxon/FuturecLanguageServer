@@ -34,6 +34,8 @@ import {
 	Diagnostic,
 	CompletionRequest,
 	CompletionItemKind,
+	NextSignature,
+	TextDocumentChangeEvent,
 } from 'vscode-languageclient';
 
 export let client: LanguageClient;
@@ -42,6 +44,8 @@ let lastPos: Position | null = null;
 let currentNumber :number|null = null;
 let codeLens :CodeLens[]|null = null;
 let resimportattributes = workspace.findFiles("**/*importattributes*");
+
+
 
 export function activate(context: ExtensionContext) {
 	// The server is implemented in node
@@ -83,7 +87,7 @@ export function activate(context: ExtensionContext) {
 				let number = parseInt(text);
 				if(!isNaN(number) && number > 30) {
 					let line = doc.lineAt(pos);
-					if(line.text.search(/\bS\.(Select|SelectRecord|(Set|Add)(INT|MONEY|DOUBLE))/) >= 0) {
+					if(line.text.search(/\bS\..*\(.*\);/) >= 0) {
 						commands.executeCommand("Show.columns", number);
 					}
 				} else {
@@ -92,9 +96,8 @@ export function activate(context: ExtensionContext) {
 					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
 					
 					let config = workspace.getConfiguration("future_c");
-					console.log(config);
+					
 					let completion = config.get<string>("signaturhilfeBeiParserfunktionen");
-					console.log(completion);
 
 					items.forEach(element => {
 						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet)) {
@@ -128,8 +131,8 @@ export function activate(context: ExtensionContext) {
 					let i = lineBeforeCursor.split(",").length - 1;
 					let exit = lineBeforeCursor.search(/\b[cC]all:.*\(.*\)/);
 					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
-					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
-					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
+					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
+					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
 					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (i >= x.signatures[0].parameters.length)) {
 						x = null;
 						return;
@@ -152,7 +155,7 @@ export function activate(context: ExtensionContext) {
 					let pos = new Position(editor.selection.start.line, editor.selection.start.character);
 
 					let line = doc.lineAt(pos);
-					console.log(line.text);
+					
 					let found = line.text.indexOf("S.");
 					if(found >= 0 || !codeLens) {
 
@@ -168,7 +171,7 @@ export function activate(context: ExtensionContext) {
 								if(newNumber != currentNumber) {
 									currentNumber = newNumber
 							
-									console.log("codelensing");
+									
 									let t = client.code2ProtocolConverter.asCodeLensParams(doc);
 									let ret = client.sendRequest<CodeLens[]>("textDocument/codeLens", t);
 									ret.then(value => {
@@ -220,11 +223,11 @@ export function activate(context: ExtensionContext) {
 
 
 	workspace.onDidCloseTextDocument((e) => {
-		console.log("closing doc " + e.uri);
+		
 	})
 	
 	workspace.onDidOpenTextDocument((e) => {
-		console.log("opening doc " + e.uri);
+		
 	});
 
 
@@ -232,7 +235,7 @@ export function activate(context: ExtensionContext) {
 		
 		let found = false;
 		(await resimportattributes).forEach((value) => {
-			if(found) { console.log("already found"); return; }
+			if(found) {  return; }
 
 			workspace.openTextDocument(value).then((value) => {
 
@@ -253,7 +256,7 @@ export function activate(context: ExtensionContext) {
 
 		const editor = window.activeTextEditor;
 		
-		console.log('For editor "' + editor + '"');
+		
 
 				const panel = window.createWebviewPanel(
 					'type_id', // Identifies the type of the webview. Used internally
@@ -301,7 +304,7 @@ export function activate(context: ExtensionContext) {
 		
 				// Handle messages from the webview
 				window.onDidChangeActiveTextEditor(ev => {
-					// console.log(ev._id, editor._id, editor);
+					// 
 					ev && ev && ev != editor && panel.dispose();
 				});
 		
@@ -315,10 +318,10 @@ export function activate(context: ExtensionContext) {
 				);
 		
 				workspace.onDidChangeTextDocument((ev) => {
-						console.log(ev);
+						
 		
 						if (ev && ev.contentChanges && ev.contentChanges.length && (ev.contentChanges[0].text || ev.contentChanges[0].rangeLength)) {
-							console.log("changing doc");
+							
 						} else {
 							console.error('No changes detected. But it must be.', ev);
 						}
@@ -330,7 +333,7 @@ export function activate(context: ExtensionContext) {
 				panel.webview.onDidReceiveMessage((message) => {
 						switch (message.command) {
 							case 'use':
-								console.log('use');
+								
 								editor.edit((edit) => {
 									let pos = new Position(editor.selection.start.line, editor.selection.start.character)
 									edit.insert(pos, message.text);
@@ -341,7 +344,7 @@ export function activate(context: ExtensionContext) {
 							case 'hide':
 								panel.dispose();
 								
-								console.log('hide');
+								
 								return;
 						}
 					},
@@ -351,7 +354,7 @@ export function activate(context: ExtensionContext) {
 		
 				panel.onDidDispose(
 					() => {
-						console.log('disposed');
+						
 					},
 					null,
 					context.subscriptions
@@ -380,13 +383,13 @@ export function activate(context: ExtensionContext) {
 
 				window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
 			} catch (error) {
-				console.log(error);
+				
 			}
 		});
 	});
 	context.subscriptions.push(disp2);
 
-	//console.log("hallo");
+	//
 	// Start the client. This will also launch the server
 	client.start();
 	window.showInformationMessage("activation finished");

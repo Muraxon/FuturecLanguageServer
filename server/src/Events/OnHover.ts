@@ -1,7 +1,7 @@
 import { TextDocument, Hover, Position } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { TextParser } from '../TextParser';
-import { GlobalAnalyzer } from '../server';
+import { GlobalAnalyzer, parserFunctions } from '../server';
 
 
 export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :Hover {
@@ -13,7 +13,8 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 
 	let functionname = word.getFunctionname();
 
-	if(word.isFunction() && functionname) {
+	if(word.isScript() && functionname) {
+		functionname.trim();
 		hoverString = "";
 		
 		let numberOfReferences = 0;
@@ -23,14 +24,15 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 			
 			let DocumentText = value.getText();
 
-			let pattern:RegExp = new RegExp("^\\s*(SCRIPT:" + functionname + ",|FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + functionname + "\\(.*\\)).*$", "gm");
+			let pattern:RegExp = new RegExp("^\\s*(SCRIPT:" + functionname + ",|FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + functionname + "\\(.*\\)|INSERTINTOSCRIPT:[0-9]+,\\/\\/" + functionname + ").*$", "gm");
 			let patternBeginrealFunction = /(void|double|CString|int|BOOL)/g;
 
 			let m = pattern.exec(DocumentText);
 			while(m) {
 				patternBeginrealFunction.lastIndex = m.index;
 
-				if(word.m_type != CursorPositionType.INCLUDESCRIPT) {
+				if(word.m_type != CursorPositionType.INCLUDESCRIPT &&
+					word.m_type != CursorPositionType.ADDHOOK) {
 					m = patternBeginrealFunction.exec(DocumentText);
 				}
 
@@ -38,7 +40,8 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 					let mPatternEndline = /$/gm;						
 					let pos = value.positionAt(m.index);
 					pos.character = 0;
-					if(word.m_type == CursorPositionType.INCLUDESCRIPT) {
+					if(word.m_type == CursorPositionType.INCLUDESCRIPT ||
+						word.m_type == CursorPositionType.ADDHOOK) {
 						pos.line++;
 					}
 					
@@ -48,7 +51,8 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 					let mEndLine = mPatternEndline.exec(DocumentText);
 					while(mEndLine) {
 						let line = DocumentText.substring(offset, mEndLine.index).trim();
-						if(word.m_type != CursorPositionType.INCLUDESCRIPT) {
+						if(word.m_type != CursorPositionType.INCLUDESCRIPT &&
+							word.m_type != CursorPositionType.ADDHOOK) {
 							if(line.length <= 0) { break; }
 						} else {
 							if(line.search(/^\s*ENDSCRIPT/gm) >= 0) {
@@ -85,7 +89,20 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 			].join("\n");
 		}
 
-	} 
+	}
+	else if(word.isParserFunction() && functionname && word.m_context.length > 0) {
+
+		let temp = parserFunctions.getHover(functionname);
+		if(temp) {
+			hoverString = [
+				"```futurec",
+				temp,
+				"```"
+			].join("\n");
+		} else {
+			hoverString = "Function not found";
+		}
+	}
 	else if(word.isValid()) {
 	
 		let notVariableDefinition = /\b(ENDFUNCTION|FUNCTION|m_Rec|funcreturn|TRUE|FALSE|int|double|float|CString|BOOL|CTable|CMoney|CDateTime|if|while|foreach|foreachrow|for|\{|\}|\(|\)|\;|STRING_QUOTE|STRING_LINEFEED|STRING_LINEBREAK|STRING_TAB|STRING_RAUTE|STRING_BRACKETCLOSE|STRING_BRACKETOPEN|STRING_PARENTHESISCLOSE|STRING_PARENTHESISOPEN|STRING_BACKSLASH1|STRING_BACKSLASH2|STRING_SLASH2|STRING_SLASH1|STRING_CARRIAGERETURN)\b/;

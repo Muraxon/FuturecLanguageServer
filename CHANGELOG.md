@@ -22,5 +22,16 @@ All notable changes to this project will be documented in this file.
 - when `{` is entered `};` is automaticly added aswell - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/1)
 - now autocompletion does not trigger when `.` is entered - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/2)
 
+## [1.1.1] - 19.07.2020
+- new snippet for hooks - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/7)
+- small fixes where completion or hovering does not fire
+  - e.g. `F.` or `"+nVariable ..`
+- small performance improvements
+- support for `ADDTOSCRIPT`
+- hover-support for parserfunctions
+- added rudimentary support for variable in `foreachrow` and `foreachrowreverse` - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/5)
+- other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer) for more information
+
+
 
 

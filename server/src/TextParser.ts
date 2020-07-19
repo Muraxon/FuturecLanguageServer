@@ -5,9 +5,22 @@ import { CursorPositionInformation, CursorPositionType } from './CursorPositionI
 export class TextParser {
 	static getWordAtPosition(pos :Position, doc :TextDocument, functionCompletion :boolean = false) :CursorPositionInformation{
 
-		let offset = doc.offsetAt(pos);
-		let text = doc.getText();
-		let char = text.charAt(offset);
+		let text = doc.getText({
+			start: {character: 0, line: pos.line},
+			end: {character: 10000, line: pos.line}
+		});
+
+		
+		let offset = pos.character;
+		let char = text.charAt(pos.character);
+
+		let hookRegex = /\s*\/\/(ADDHOOK.*[0-9]+.*)\s*/g;
+		let hookM = hookRegex.exec(text);
+		if(hookM) {
+			let hookPos = new CursorPositionInformation(hookM[1], char.trim(), CursorPositionType.ADDHOOK, "");
+			return hookPos;
+		}
+
 		if(functionCompletion) {
 			if(char.search(/\s/) >= 0) {
 				offset--;
@@ -23,10 +36,10 @@ export class TextParser {
 	
 		let includescriptOffset = offset;
 
-		while((offset > 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
+		while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
 		(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-		(char != '\"') && (char != '-') && (char != '#') && (char != '$') && (char != '{') && 
-		(char != ';') && (char != '}'))
+		(char != '\"') && (char != '-') && (char != '+') && (char != '#') && (char != '$') && (char != '{') && 
+		(char != ';') && (char != '}') && (char != '/'))
 		{
 			if(char == ':') {
 				isfunction = true;
@@ -38,17 +51,17 @@ export class TextParser {
 
 				offset--;
 				context = text.charAt(offset);
-				if(context == "D" || context == "H" || context == "F" || context == "S") {
+				if(context == "D" || context == "H" || context == "F" || context == "S" || context == "P") {
 					offset--;
 					char = text.charAt(offset);
 					if(char == "\n" || char == "\t" || char == " ") {
 
 					} else {
 						isVarFunction = true;
-						while((offset > 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
+						while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
 						(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-						(char != '\"') && (char != '-') && (char != '#') && (char != '$') && (char != '{') && 
-						(char != ';') && (char != '}')) {
+						(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
+						(char != ';') && (char != '}') && (char != '/')) {
 
 							offset--;
 							char = text.charAt(offset);
@@ -58,10 +71,10 @@ export class TextParser {
 					}
 				} else {
 					isVarFunction = true;
-					while((offset > 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
+					while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
 					(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-					(char != '\"') && (char != '-') && (char != '#') && (char != '$') && (char != '{') && 
-					(char != ';') && (char != '}')) {
+					(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
+					(char != ';') && (char != '}') && (char != '/')) {
 
 						offset--;
 						char = text.charAt(offset);
@@ -132,11 +145,14 @@ export class TextParser {
 
 		let m1 = text.lastIndexOf("\nSCRIPT:");
 		let m2 = text.lastIndexOf("\nINSERTINTOSCRIPT:");
+		let m3 = text.lastIndexOf("\nADDTOSCRIPT:");
 
-		if(m1 > m2) {
+		if(m1 > m2 && m1 > m3) {
 			return [doc.positionAt(m1), false];
-		} else {
+		} else if(m2 > m3) {
 			return [doc.positionAt(m2), true];
+		} else {
+			return [doc.positionAt(m3), false];
 		}
 	}
 

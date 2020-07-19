@@ -8,17 +8,6 @@ export class Analyzer {
 	constructor() {
 
 
-		/*exec("dir", (error, stdout, stderr) => {
-			if (error) {
-				console.log(`error: ${error.message}`);
-				return;
-			}
-			if (stderr) {
-				console.log(`stderr: ${stderr}`);
-				return;
-			}
-			console.log(`stdout: ${stdout}`);
-		});*/
 	}
 
 	getincludeScriptsNumbers(script :string) :number[]|null {
@@ -110,50 +99,43 @@ export class Analyzer {
 
 	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false) :Script|null {
 		let editedScript :Script|null = null;
-		
+
 		let completeDocText = doc.getText();
-
 		let offset = doc.offsetAt(CursorPos);
-		let subscript = completeDocText.substring(0, offset);
-		
-		let patternEndLine = /\n/g; 
 
-		let posScriptTemp = TextParser.getScriptStart(doc, CursorPos, subscript);
-		let scriptNumberStart = 8;
-		if(posScriptTemp[1] === true) {
-			scriptNumberStart = 18;
+		let mStartScript = /^(SCRIPT|INSERTINTOSCRIPT|ADDTOSCRIPT):([0-9]+).*$/gm;
+
+		let finalStart :RegExpExecArray|null = null;
+		let mStart :RegExpExecArray|null = null;
+		while(mStart = mStartScript.exec(completeDocText)) {
+			if(mStart.index > offset) {
+				break;
+			}
+			finalStart = mStart;
 		}
-		let posScript = posScriptTemp[0];
 
-		let m = doc.offsetAt(posScript);
+		if(finalStart) {
 
-		patternEndLine.lastIndex = m + 1;
-		let ex1 = patternEndLine.exec(subscript);
-		if(ex1) {
-			let patternEnd = /^\s*ENDSCRIPT/gm;
-			patternEnd.lastIndex = ex1.index;
+			let end :number = 0;
 
-			let patternNumberEnd = /,/g;
-			patternNumberEnd.lastIndex = m + scriptNumberStart + 1;
-			let scriptNumberEnd = patternNumberEnd.exec(completeDocText);
-			if(scriptNumberEnd) {
-				let number = completeDocText.substring(m + scriptNumberStart, scriptNumberEnd.index);
-				let scriptNumber = parseInt(number);
-				let ex :RegExpExecArray|null = null;
-				let index = doc.offsetAt(CursorPos);
-				if(!toPos) {
-					ex = patternEnd.exec(completeDocText);
-					if(ex) {
-						index = ex.index;
-					}
-				}
-
-				if((index > ex1.index && (offset > ex1.index) && (offset < index)) || (toPos)) {
-					let scriptText = completeDocText.substring(ex1.index, index);
-					editedScript = new Script(scriptText, scriptNumber, posScript, doc.uri);
+			if(toPos) {
+				end = offset;
+			} else {
+				let patternEnd = /^\s*ENDSCRIPT/gm;
+				patternEnd.lastIndex = finalStart.index;
+				let ex1 = patternEnd.exec(completeDocText);
+				if(ex1) {
+					end = ex1.index;
 				}
 			}
+
+			if(end > 0) {
+				editedScript = new Script(completeDocText.substring(finalStart.index, end), parseInt(finalStart[2]), doc.positionAt(finalStart.index), doc.uri);
+			}
 		}
+
+		
+
 
 		return editedScript;
 	}

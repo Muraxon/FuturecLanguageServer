@@ -16,7 +16,8 @@ export class CursorPositionInformation {
 		if((this.m_type == CursorPositionType.VARIABLE) || 
 		(this.m_type == CursorPositionType.USERDEFINED_FUNCTION) || 
 		(this.m_type == CursorPositionType.PARSER_FUNCTION) || 
-		(this.m_type == CursorPositionType.INCLUDESCRIPT)) {
+		(this.m_type == CursorPositionType.INCLUDESCRIPT) ||
+		(this.m_type == CursorPositionType.ADDHOOK)) {
 			return true;
 		}
 		return false;
@@ -28,6 +29,7 @@ export class CursorPositionInformation {
 				return this.m_word.substr(5).trim();
 				break;
 			case CursorPositionType.PARSER_FUNCTION:
+			case CursorPositionType.ADDHOOK:
 			case CursorPositionType.INCLUDESCRIPT:
 				return this.m_word;
 				break;
@@ -35,8 +37,17 @@ export class CursorPositionInformation {
 		return null;
 	}
 
-	isFunction() :boolean {
-		if(this.m_type == CursorPositionType.PARSER_FUNCTION || this.m_type == CursorPositionType.USERDEFINED_FUNCTION || this.m_type == CursorPositionType.INCLUDESCRIPT) {
+	isScript() :boolean {
+		if (this.m_type == CursorPositionType.INCLUDESCRIPT || 
+			this.m_type == CursorPositionType.ADDHOOK || 
+			this.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
+			return true;
+		}
+		return false;
+	}
+
+	isParserFunction() :boolean {
+		if (this.m_type == CursorPositionType.PARSER_FUNCTION) {
 			return true;
 		}
 		return false;
@@ -49,5 +60,6 @@ export enum CursorPositionType {
 	PARSER_FUNCTION,
 	UNDEFINED_VALUE,
 	INCLUDESCRIPT,
+	ADDHOOK,
 	ERROR = 3000
 }

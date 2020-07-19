@@ -59,6 +59,16 @@
 		],
 		"keybindings": [
 			{
+				"name": "Neuen Hook erstellen",
+				"command": "editor.action.insertSnippet",
+				"when": "editorTextFocus",
+				"key": "Ctrl+numpad3",
+				"args": {
+					"langId": "futurec",
+					"name": "New Hook"
+				}
+			},
+			{
 				"name": "Neue Function erstellen",
 				"command": "editor.action.insertSnippet",
 				"when": "editorTextFocus",

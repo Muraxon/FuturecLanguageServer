@@ -19,23 +19,13 @@ export class DocumentManager {
 	}
 
 	add(...initDocs :TextDocument[]) {
-		//console.log(this.m_Documents);
 		initDocs.forEach(element => {
 			let doc = this.isManaged(element.uri);
 			let found = element.uri.search(/Standard/);
 			if(!doc && found >= 0) {
 				this.m_Documents.set(element.uri, element);
-				console.log("onDidClose adding to notmanaged: " + element.uri);
+				
 			}
-			else {
-				if(found > 0) {
-				   console.log("onDidClose already in notmanaged: " + element.uri);
-				}
-			    else {
-				   console.log("Do nothing with not-standard file " + element.uri);
-				   //console.log(notManageddocuments);
-			    }
-			}	
 		});
 	}
 
@@ -45,22 +35,15 @@ export class DocumentManager {
 				let wholeFile = readFileSync(uriToFilePath(element)!, "latin1");
 				let textDoc :TextDocument = TextDocument.create(element, "de", 1, wholeFile);
 
-				
-				//console.log(wholeFile);
 				this.m_Documents.set(element, textDoc);
-				//console.log("reading file: " + element);
 			}
 		});
 	}
 	delete(...initDocs :string[]) {
-		//console.log(this.m_Documents);
 		initDocs.forEach(element => {
 			let doc = this.isManaged(element);
 			if(doc) {
-				//console.log(notManageddocuments);
 				this.m_Documents.delete(doc.uri);
-				//console.log(notManageddocuments);
-				console.log("onDidOpen deleting from notmanaged: " + doc.uri);
 			}
 		});
 	}
@@ -71,22 +54,18 @@ export class DocumentManager {
 
 	startEvent(...ManagedFromVsCode :TextDocument[]) {
 		ManagedFromVsCode.forEach(element => {
-			this.m_Documents.set(element.uri, element);
+			if(!this.m_Documents.has(element.uri)) {
+				this.m_Documents.set(element.uri, element);
+			}
 		});
-		/*console.log("Mit VSOCDE");
-		this.m_Documents.forEach((key, value) => {
-			console.log(value);
-		});*/
+		
 		this.m_AddedManagedDocuments = true;
 	}
 	endEvent(...ManagedFromVsCode :TextDocument[]) {
 		ManagedFromVsCode.forEach(element => {
 			this.m_Documents.delete(element.uri);
 		});
-		/*console.log("Ausgangszustand");
-		this.m_Documents.forEach((key, value) => {
-			console.log(value);
-		});*/
+		
 		this.m_AddedManagedDocuments = false;
 	}
 
