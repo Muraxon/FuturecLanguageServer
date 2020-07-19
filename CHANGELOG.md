@@ -30,7 +30,7 @@ All notable changes to this project will be documented in this file.
 - support for `ADDTOSCRIPT`
 - hover-support for parserfunctions
 - added rudimentary support for variable in `foreachrow` and `foreachrowreverse` - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/5)
-- other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer) for more information
+- other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/405da8a3232a9745c1eceed404203f9d1662ef6a) for more information
 
 
 
