@@ -114,7 +114,7 @@ export class Analyzer {
 			finalStart = mStart;
 		}
 
-		if(finalStart) {
+			if(finalStart) {
 
 			let end :number = 0;
 

@@ -219,6 +219,10 @@ export function activate(context: ExtensionContext) {
 			});
 			client.sendNotification("custom/sendParserFunctionXML", filename);
 		})
+
+		client.onNotification("custom/getCursorPos", async () => {
+			client.sendNotification("custom/sendCursorPos", [[window.activeTextEditor.document.uri.toString(), window.activeTextEditor.selection.active]]);
+		})
 	});
 
 

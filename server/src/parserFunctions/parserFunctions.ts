@@ -3,6 +3,7 @@ import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
 import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
+import { parserFunctions } from '../server';
 
 export class ParserFunctions {
 
@@ -96,7 +97,7 @@ export class ParserFunctions {
 						if(signatureString.length <= 0) {
 							signatureString = "(void)";
 						}
-						this.m_FunctionHoverStrings.set(item.label.trim(),  "returns " + this.getMappedReturnValue(returnValue) + "\n" + signatureString.trim());
+						this.m_FunctionHoverStrings.set(item.label.trim(),  ["```futurec", signatureString.trim(), "```"].join("\n") + "\n" + "`return " + this.getMappedReturnValue(returnValue) + "`");
 					}
 	
 					if(result.root.snippet[i].context != undefined) {
@@ -226,4 +227,37 @@ export class ParserFunctions {
 		return this.m_CompletionItemConstants
 	}
 
+	static m_keyword = /(int|BOOL|CString|double|CTable|CMoney|CDateTime|FALSE|TRUE|AND|OR|STRING_LINEBREAK|m_Rec|m_TabNr|m_JobNr|D|F|P|S|H|if|while|return|funcreturn|includescript)/g;
+	isKeyWord(word :string) :boolean {
+		ParserFunctions.m_keyword.lastIndex = 0;
+		let m = ParserFunctions.m_keyword.exec(word);
+		if(m) {
+			return true;
+		}
+		return false;
+	}
+
+	isParserFunction(word :string) :boolean {
+		if(this.m_FunctionHoverStrings.has(word)) {
+			return true;
+		}
+		return false;
+	}
+
+	static m_literal = /[0-9]+/g;
+	isLiteral(word :string) :boolean {
+		ParserFunctions.m_literal.lastIndex = 0;
+		let m = ParserFunctions.m_literal.exec(word);
+		if(m) {
+			return true;
+		}
+		return false;
+	}
+
+	isVariable(word :string) :boolean {
+		if(this.isKeyWord(word) || this.isParserFunction(word) || this.isLiteral(word)) {
+			return false;
+		}
+		return true;
+	}
 }

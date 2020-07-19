@@ -9,7 +9,9 @@ export class Script {
 	private m_includeScript :Array<number>;
 
 	constructor(text :string, number :number, linenumber :Position, uri :string) {
-		this.m_scripttext = "--------------" + number.toString() + "\n" + text + "\n" + "--------------";
+		//"--------------" + number.toString() + "\n" + 
+		// + "\n" + "--------------"
+		this.m_scripttext = text;
 		this.m_scriptnumber = number;
 		this.m_Position = linenumber;
 		this.m_Uri = uri;

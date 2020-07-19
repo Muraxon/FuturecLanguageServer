@@ -225,6 +225,22 @@ connection.onNotification("custom/sendParserFunctionXML", (uri :string) => {
 
 });
 
+connection.onNotification("custom/sendCursorPos", (data :any[]) => {
+	let doc :string = data[0];
+	let docc = documents.get(doc);
+	if(docc) {
+		try {
+			//let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, docc, data[1], OnDiagnostic);
+	
+			// Send the computed diagnostics to VSCode.
+			//connection.sendDiagnostics({ uri: docc.uri, diagnostics: sig });
+		} catch (error) {
+			console.log(error);
+		}
+		
+	}
+});
+
 connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPositionParams) :Position => {
 
 	let doc = documents.get(param.textDocument.uri);
@@ -237,11 +253,7 @@ connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPosit
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
-
-	//let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, textDocument, {character: 0, line: 0}, OnDiagnostic);
-	
-	// Send the computed diagnostics to VSCode.
-	//connection.sendDiagnostics({ uri: textDocument.uri, diagnostics: sig });
+	//connection.sendNotification("custom/getCursorPos");
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -253,6 +265,8 @@ connection.onDidChangeWatchedFiles(_change => {
 connection.onCodeAction((params, token) :(Command | CodeAction)[] => {
 	let doc = documents.get(params.textDocument.uri);
 	if(doc) {
+		let variable = doc.getText(params.range);
+
 		return [{
 			title: "Extract return and replace with isVariableDefined",
 			diagnostics: params.context.diagnostics,
@@ -260,7 +274,8 @@ connection.onCodeAction((params, token) :(Command | CodeAction)[] => {
 			edit: {
 				changes: {
 					[params.textDocument.uri]: [{
-						range: params.range, newText: "if(H.IsVariableDefined(XXX)) {\n\t\t//Do Something to prevent execution\n\t}"
+						range: params.range,
+						newText: "if(H.IsVariableDefined("+variable+")) {\n\t\t//Do Something to prevent execution\n\t}"
 					}]
 				}
 			}

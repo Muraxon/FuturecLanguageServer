@@ -94,11 +94,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 
 		let temp = parserFunctions.getHover(functionname);
 		if(temp) {
-			hoverString = [
-				"```futurec",
-				temp,
-				"```"
-			].join("\n");
+			hoverString = temp;
 		} else {
 			hoverString = "Function not found";
 		}

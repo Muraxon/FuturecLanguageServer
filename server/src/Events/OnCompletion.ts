@@ -41,9 +41,8 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 			if(word.m_context == "m_Rec" || word.m_context == "m_Rec2") {
 				return parserFunctions.getTableFunctions(pos);
 			}
-			elapsed_time("start_completion_m_rec");
+
 			scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
-			elapsed_time("end_completionm_Rec");
 	
 			if(scripttext) {
 				let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s*(\\&|)\\s*" + word.m_context + "\\s*(\\=|\\;|\\,|\\))", "g");
