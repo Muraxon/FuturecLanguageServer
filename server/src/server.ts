@@ -230,10 +230,10 @@ connection.onNotification("custom/sendCursorPos", (data :any[]) => {
 	let docc = documents.get(doc);
 	if(docc) {
 		try {
-			//let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, docc, data[1], OnDiagnostic);
+			let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, docc, data[1], OnDiagnostic);
 	
 			// Send the computed diagnostics to VSCode.
-			//connection.sendDiagnostics({ uri: docc.uri, diagnostics: sig });
+			connection.sendDiagnostics({ uri: docc.uri, diagnostics: sig });
 		} catch (error) {
 			console.log(error);
 		}
@@ -253,7 +253,7 @@ connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPosit
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
-	//connection.sendNotification("custom/getCursorPos");
+	connection.sendNotification("custom/getCursorPos");
 }
 
 connection.onDidChangeWatchedFiles(_change => {

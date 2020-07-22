@@ -97,13 +97,14 @@ export class Analyzer {
 		}	
 	}
 
-	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false) :Script|null {
+	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false, withHeader :boolean = true) :Script|null {
 		let editedScript :Script|null = null;
 
 		let completeDocText = doc.getText();
 		let offset = doc.offsetAt(CursorPos);
 
 		let mStartScript = /^(SCRIPT|INSERTINTOSCRIPT|ADDTOSCRIPT):([0-9]+).*$/gm;
+		let mStartWithoutheader = /\r\n/g;
 
 		let finalStart :RegExpExecArray|null = null;
 		let mStart :RegExpExecArray|null = null;
@@ -111,10 +112,15 @@ export class Analyzer {
 			if(mStart.index > offset) {
 				break;
 			}
+			mStartWithoutheader.lastIndex = mStartScript.lastIndex;
 			finalStart = mStart;
 		}
 
-			if(finalStart) {
+		if(!withHeader) {
+			finalStart = mStartWithoutheader.exec(completeDocText);
+		}
+
+		if(finalStart) {
 
 			let end :number = 0;
 

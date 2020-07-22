@@ -227,11 +227,12 @@ export class ParserFunctions {
 		return this.m_CompletionItemConstants
 	}
 
-	static m_keyword = /(int|BOOL|CString|double|CTable|CMoney|CDateTime|FALSE|TRUE|AND|OR|STRING_LINEBREAK|m_Rec|m_TabNr|m_JobNr|D|F|P|S|H|if|while|return|funcreturn|includescript)/g;
+	static m_keyword = /\b(int|BOOL|CString|double|CTable|CMoney|CDateTime|FALSE|TRUE|AND|OR|STRING_LINEBREAK|m_Rec|m_TabNr|m_JobNr|D|F|P|S|H|if|while|return|funcreturn|includescript)\b/;
 	isKeyWord(word :string) :boolean {
 		ParserFunctions.m_keyword.lastIndex = 0;
 		let m = ParserFunctions.m_keyword.exec(word);
 		if(m) {
+			console.log("keyword " + word);
 			return true;
 		}
 		return false;
@@ -239,16 +240,18 @@ export class ParserFunctions {
 
 	isParserFunction(word :string) :boolean {
 		if(this.m_FunctionHoverStrings.has(word)) {
+			console.log("parserfunction " + word);
 			return true;
 		}
 		return false;
 	}
 
-	static m_literal = /[0-9]+/g;
+	static m_literal = /\b[0-9]+\b/g;
 	isLiteral(word :string) :boolean {
 		ParserFunctions.m_literal.lastIndex = 0;
 		let m = ParserFunctions.m_literal.exec(word);
 		if(m) {
+			console.log("literal " + word);
 			return true;
 		}
 		return false;
