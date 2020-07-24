@@ -45,6 +45,7 @@ import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 import { TextParser } from './TextParser';
+import { Script } from 'vm';
 
 
 export let parserFunctions :ParserFunctions = new ParserFunctions();
@@ -190,18 +191,109 @@ documents.onDidChangeContent((change :TextDocumentChangeEvent) => {
 	validateTextDocument(change.document);
 });
 
+connection.onRequest("custom/GetScriptNumber", (params :any) :number => {
+
+	let doc = documents.get(params.doc);
+	if(doc) {
+		let script = GlobalAnalyzer.getEditedScript(params.pos, doc, true);
+		if(script) {
+			return script.m_scriptnumber;
+		}
+	}
+	return 0;
+});
+
+connection.onRequest("custom/getHookStart", (params :any) :Position => {
+
+	let doc = documents.get(params.uri);
+	let oldDoc = documents.get(params.oldDoc);
+	if(doc && oldDoc) {
+		let docText = doc.getText();
+
+		let m :RegExpExecArray|null = null;
+		let lastIndex = -1;
+
+		
+		
+		let regex = new RegExp("\\bINSERTINTOSCRIPT:"+params.number+","+params.name+"\\b", "gm");
+		// Check if hook does already exist
+		let count = 0;
+		if(m = regex.exec(docText)) {
+			return {
+				character: 0,
+				line: 0
+			}
+		}
+		m = null;
+
+		// Check for hooks inside script - take last before cursor / and so on until one hook is found and then proceed
+		let script = GlobalAnalyzer.getEditedScript(params.pos, oldDoc, true);
+		let hooks :string[] = [];
+		if(script) {
+			hooks = script.getHooks();
+			let i = hooks.length - 1;
+			while((i >= 0) && (lastIndex < 0)) {
+				regex = new RegExp("\\bINSERTINTOSCRIPT:"+params.number+","+hooks[i]+"\\b", "gm");
+				if(m = regex.exec(docText)) {
+					lastIndex = regex.lastIndex;
+				}
+				i--;
+			}
+		}
+		
+
+		// check for the next availabe script / insertinto - part | and give back the index to start the insertion form
+		let startNumber = <number>params.number - 1;
+		regex = new RegExp("\\b(INSERTINTOSCRIPT|SCRIPT|ADDTOSCRIPT):"+startNumber+",", "gm");
+		if(lastIndex < 0) {
+			m = null;
+			while((startNumber > 0) && (lastIndex < 0)) {
+				while(m = regex.exec(docText)) {
+					lastIndex = regex.lastIndex;
+					count++;
+				}
+				startNumber--;
+				regex = new RegExp("(INSERTINTOSCRIPT|SCRIPT|ADDTOSCRIPT):"+startNumber+",", "gm");
+			}
+
+		}
+
+		// If nothing has been found by now - fallback to the end of the file
+		if(lastIndex < 0) {
+			lastIndex = docText.length - 1;
+		} else {
+			let regexEndOfScript = /^\s*ENDSCRIPT/gm;
+			regexEndOfScript.lastIndex = lastIndex;
+			regexEndOfScript.exec(docText);
+
+			let regexEOL = /\n/gm;
+			regexEOL.lastIndex = regexEndOfScript.lastIndex + 2;
+			regexEOL.exec(docText);
+			if(regexEOL.lastIndex <= 0) {
+				lastIndex = docText.length - 1;
+			} else {
+				lastIndex = regexEOL.lastIndex;
+			}
+		}
+
+		return doc.positionAt(lastIndex);
+	}
+
+	return {
+		character: 0,
+		line: 0
+	};
+});
+
 connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
-	
-
-
 	let doc = documents.get(param2);
 	if(doc) {
-		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
+		//let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
 		
-		connection.sendDiagnostics({
+		/*connection.sendDiagnostics({
 			diagnostics: diag,
 			uri: param2
-		})
+		})*/
 	}
 });
 
@@ -230,10 +322,10 @@ connection.onNotification("custom/sendCursorPos", (data :any[]) => {
 	let docc = documents.get(doc);
 	if(docc) {
 		try {
-			let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, docc, data[1], OnDiagnostic);
+			//let sig = <Diagnostic[]>GlobalManager.doWithDocuments(documents, docc, data[1], OnDiagnostic);
 	
 			// Send the computed diagnostics to VSCode.
-			connection.sendDiagnostics({ uri: docc.uri, diagnostics: sig });
+			//connection.sendDiagnostics({ uri: docc.uri, diagnostics: sig });
 		} catch (error) {
 			console.log(error);
 		}
@@ -253,7 +345,7 @@ connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPosit
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
-	connection.sendNotification("custom/getCursorPos");
+	//connection.sendNotification("custom/getCursorPos");
 }
 
 connection.onDidChangeWatchedFiles(_change => {

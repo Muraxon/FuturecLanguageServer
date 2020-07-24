@@ -22,22 +22,6 @@
 		],
 		"description":"Erstellt ein neues Skript mit Changekommentar usw."
 	},
-	"New Hook": {
-		"prefix": "Create new Hook",
-		"body": [
-			"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
-			"\t\t${6:Erstellt ${7:asdasd}}",
-			"",
-			"///////////////////////////////////////////////////////////////////////////////",
-			"INSERTINTOSCRIPT:${1:Scriptnumber},//ADDHOOK${1:Scriptnumber}-${2:HookName}",
-			"",
-			"\t$0",
-			"",
-			"ENDSCRIPT",
-			"///////////////////////////////////////////////////////////////////////////////"
-		],
-		"description":"Erstellt einen neuen Hook"
-	},
 	"New Function": {
 		"prefix": "Create Function",
 		"body": [

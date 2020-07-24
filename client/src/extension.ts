@@ -11,32 +11,33 @@ import { workspace,
 	Position, 
 	commands, 
 	window,
-	Uri, 
 	ViewColumn, 
 	TextEditorRevealType, 
 	CodeLens, 
-	CompletionItem, 
-	ProgressLocation,
-	StatusBarAlignment,
-	CancellationToken,
-	Progress,
+	CompletionItem,
 	SnippetString,
 	CompletionList,
-	Range
-	
+	Range,
+	env,
+	TextEdit,
+	TextEditor,
+	TextEditorEdit,
+	extensions,
+	ProgressLocation
 } from 'vscode';
 
 import {
+
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind,
-	Diagnostic,
 	CompletionRequest,
 	CompletionItemKind,
-	NextSignature,
-	TextDocumentChangeEvent,
+	InsertTextFormat
 } from 'vscode-languageclient';
+import { editor } from './test/helper';
+
 
 export let client: LanguageClient;
 let x: SignatureHelp | null = null;
@@ -45,13 +46,12 @@ let currentNumber :number|null = null;
 let codeLens :CodeLens[]|null = null;
 let resimportattributes = workspace.findFiles("**/*importattributes*");
 
-
-
 export function activate(context: ExtensionContext) {
 	// The server is implemented in node
 	let serverModule = context.asAbsolutePath(
 		path.join('server', 'out', 'server.js')
 	);
+		
 	// The debug options for the server
 	// --inspect=6009: runs the server in Node's Inspector mode so VS Code can attach to the server for debugging
 	let debugOptions = { execArgv: ['--nolazy', '--inspect=6009'] };
@@ -235,7 +235,7 @@ export function activate(context: ExtensionContext) {
 	});
 
 
-	let disp = commands.registerCommand("Show.columns", async (args) => {
+	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
 		
 		let found = false;
 		(await resimportattributes).forEach((value) => {
@@ -256,129 +256,16 @@ export function activate(context: ExtensionContext) {
 				}
 			});
 		});
-		return;
+	}));
 
-		const editor = window.activeTextEditor;
-		
-		
-
-				const panel = window.createWebviewPanel(
-					'type_id', // Identifies the type of the webview. Used internally
-					'Title', // Title of the panel displayed to the user
-					ViewColumn.Beside, // Editor column to show the new webview panel in.
-					{
-						// Enable scripts in the webview
-						enableScripts: true
-					} // Webview options. More on these later.
-				);
-				panel.webview.html = "<!DOCTYPE html>\
-				<html lang='en'>\
-				  <head>\
-					<meta charset='UTF-8'>\
-					<meta name='viewport' content='width=device-width, initial-scale=1.0'>\
-					<title>Title</title>\
-					<script src='https://code.jquery.com/jquery-3.3.1.slim.min.js' integrity='sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo' crossorigin='anonymous'></script>\
-					<style>\
-					p:hover {\
-					background-color: grey;\
-					cursor: pointer;\
-					color: white;\
-					}\
-					</style>\
-				  </head>\
-				  <body>\
-					<p class='test' value='6'>Kunde</p>\
-					<p class='test' value='2'>Auftrag</p>\
-					<p class='test' value='4'>Rechnung</p>\
-					<p class='test' value='5'>Lieferschein</p>\
-					<button onclick='hideAdvise()'>Hide</button>\
-					<script>\
-					$('.test').click(function() {\
-						let text_ = $(this).attr('value');\
-						vscode.postMessage({command: 'use',text: text_})\
-					});\
-					const vscode = acquireVsCodeApi();\
-					  function hideAdvise(){\
-						vscode.postMessage({command: 'hide'})\
-					  }\
-					</script>\
-				  </body>\
-				</html>";
-		
-		
-				// Handle messages from the webview
-				window.onDidChangeActiveTextEditor(ev => {
-					// 
-					ev && ev && ev != editor && panel.dispose();
-				});
-		
-				workspace.onDidCloseTextDocument(
-					textDocument => {
-						console.log("closed => " + textDocument.isClosed)
-						panel.dispose();
-					},
-					null,
-					context.subscriptions
-				);
-		
-				workspace.onDidChangeTextDocument((ev) => {
-						
-		
-						if (ev && ev.contentChanges && ev.contentChanges.length && (ev.contentChanges[0].text || ev.contentChanges[0].rangeLength)) {
-							
-						} else {
-							console.error('No changes detected. But it must be.', ev);
-						}
-					},
-					null,
-					context.subscriptions
-				);
-		
-				panel.webview.onDidReceiveMessage((message) => {
-						switch (message.command) {
-							case 'use':
-								
-								editor.edit((edit) => {
-									let pos = new Position(editor.selection.start.line, editor.selection.start.character)
-									edit.insert(pos, message.text);
-									//panel.dispose()
-								});
-								
-								return;
-							case 'hide':
-								panel.dispose();
-								
-								
-								return;
-						}
-					},
-					undefined,
-					context.subscriptions
-				);
-		
-				panel.onDidDispose(
-					() => {
-						
-					},
-					null,
-					context.subscriptions
-				)
-
-	});
-
-	const command = 'Check.Skript.Syntax';
-	const commandHandler = () => {
+	context.subscriptions.push(commands.registerCommand("Check.Skript.Syntax", () => {
 		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
 		let uri = window.activeTextEditor.document.uri;
 
 		client.sendNotification("custom/GetDiagnostic", [pos, uri.toString()]);
-	};
-  
-	context.subscriptions.push(commands.registerCommand(command, commandHandler));
-	
-	context.subscriptions.push(disp);
+	}));
 
-	let disp2 = commands.registerCommand("jump.to.start.of.script", () => {
+	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
 		let param = client.code2ProtocolConverter.asTextDocumentPositionParams(window.activeTextEditor.document, new Position(window.activeTextEditor.selection.start.line,window.activeTextEditor.selection.start.character))
 		client.sendRequest("custom/jump.to.start.of.script", param).then((pos :Position) => {
 			try {
@@ -390,8 +277,127 @@ export function activate(context: ExtensionContext) {
 				
 			}
 		});
-	});
-	context.subscriptions.push(disp2);
+	}));
+
+	
+
+	context.subscriptions.push(commands.registerCommand("create.hook", async () => {
+		let info = "Bitte geben Sie den Namen des Hooks ein.";
+
+		let scriptNumber :number = await client.sendRequest("custom/GetScriptNumber", {
+			doc: window.activeTextEditor.document.uri.toString(),
+			pos: window.activeTextEditor.selection.active
+		});
+
+		if(scriptNumber > 0) {
+
+			let hookname = await window.showInputBox({
+				ignoreFocusOut: true,
+				valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
+				prompt: info,
+				value: "//ADDHOOK-"+scriptNumber+"-",
+				validateInput: (text :string) => {
+					let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
+					if(!hookPattern.exec(text)) {
+						return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+					}
+					return "";
+				}
+			});
+	
+			if(hookname) {
+				hookname.trim();
+				let uri = await window.showOpenDialog({
+					canSelectFolders: false,
+					canSelectMany: false,
+					filters: { "Dateien": ["cpp"]},
+					canSelectFiles: true,
+					openLabel: "wählen"
+				});
+	
+				if(uri) {
+					let file = uri[0];
+					let doc = await workspace.openTextDocument(file);
+
+					window.withProgress({
+						location: ProgressLocation.Notification,
+						cancellable: false
+					}, (progress, token) => {
+						progress.report({message: "Es wird nach einer passenden Hookstelle gesucht..."});
+						let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
+							uri: file.toString(),
+							name: hookname,
+							number: scriptNumber,
+							pos: window.activeTextEditor.selection.active,
+							oldDoc: window.activeTextEditor.document.uri.toString()
+						});
+
+						setTimeout(() => {
+							progress.report({message: "Jetzt samma dann gleich fertig..."});
+						}, 4000);
+
+						setTimeout(() => {
+							progress.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
+						}, 8000);
+
+						setTimeout(() => {
+							progress.report({message: "Ziemlich großes Skript..."});
+						}, 12000);
+
+						setTimeout(() => {
+							progress.report({message: "Jetzt reichts aber..."});
+						}, 16000);
+
+						setTimeout(() => {
+							progress.report({message: "Ok ich geb auf..."});
+						}, 30000);
+
+						return pos.then((pos :Position) => {
+							if(pos.line > 0) {
+								progress.report({ message: "Datei wird geöffnet."});
+								let snippet = new SnippetString(
+									["",
+									"//////////////////////////////////////////////////////////////////////////////",
+									"",
+									"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
+									"\t\t${6:Erstellt ${7:asdasd}}",
+									"",
+									"//////////////////////////////////////////////////////////////////////////////",
+									"INSERTINTOSCRIPT:"+scriptNumber+","+hookname,
+									"",
+									"\t$0",
+									"",
+									"ENDSCRIPT",
+									"//////////////////////////////////////////////////////////////////////////////",
+									""
+									].join("\n"));
+			
+									
+								window.activeTextEditor.edit((editbuilder) => {
+									editbuilder.insert(window.activeTextEditor.selection.active, hookname);
+								}).then((success) => {
+									let texteditor = window.showTextDocument(doc).then((texteditor) => {
+										progress.report({ message: "Hook wird erstellt."});
+										let position = new Position(pos.line, pos.character);
+										let range = new Range(position, position);
+										texteditor.revealRange(range, TextEditorRevealType.InCenter);					
+										texteditor.insertSnippet(snippet, position);
+									});
+								})
+
+							} else {
+								window.showErrorMessage("Hook konnte nicht angelegt werden, weil er bereits existiert");
+							}
+						});
+						
+					});
+				}
+			}
+		} else {
+			window.showErrorMessage("Kein gültiges Skript wird bearbeitet. Hook kann nicht erstellt werden.");
+		}
+
+	}));
 
 	//
 	// Start the client. This will also launch the server

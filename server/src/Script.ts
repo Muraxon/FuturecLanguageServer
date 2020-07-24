@@ -31,6 +31,17 @@ export class Script {
 		});
 	}
 
+	getHooks() :string[] {
+		let hooks:string[] = [];
+
+		let regexHook = /^.*(\/\/ADDHOOK.*)\s*$/gm;
+		let m :RegExpExecArray|null = null;
+		while(m = regexHook.exec(this.m_scripttext)) {
+			hooks.push(m[1]);
+		}
+		return hooks;
+	}
+
 	filterBranches() {
 		
 

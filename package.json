@@ -59,16 +59,6 @@
 		],
 		"keybindings": [
 			{
-				"name": "Neuen Hook erstellen",
-				"command": "editor.action.insertSnippet",
-				"when": "editorTextFocus",
-				"key": "Ctrl+numpad3",
-				"args": {
-					"langId": "futurec",
-					"name": "New Hook"
-				}
-			},
-			{
 				"name": "Neue Function erstellen",
 				"command": "editor.action.insertSnippet",
 				"when": "editorTextFocus",
@@ -101,6 +91,10 @@
 				"command": "jump.to.start.of.script",
 				"key": "Ctrl+j s",
 				"when": "editorTextFocus"
+			}, {
+				"command": "create.hook",
+				"key": "Ctrl+j h",
+				"when": "editorTextFocus"
 			}
 		],
 		"commands": [
@@ -110,6 +104,9 @@
 			}, {
 				"command": "jump.to.start.of.script",
 				"title": "Jump to start of script"
+			}, {
+				"command": "create.hook",
+				"title": "Hook erstellen"
 			}
 		]
 	},
