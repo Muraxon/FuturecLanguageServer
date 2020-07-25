@@ -232,16 +232,6 @@ export function activate(context: ExtensionContext) {
 		})
 	});
 
-
-	workspace.onDidCloseTextDocument((e) => {
-		
-	})
-	
-	workspace.onDidOpenTextDocument((e) => {
-		
-	});
-
-
 	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
 		
 		let found = false;
