@@ -18,12 +18,8 @@ import { workspace,
 	SnippetString,
 	CompletionList,
 	Range,
-	env,
-	TextEdit,
-	TextEditor,
 	TextEditorEdit,
-	extensions,
-	ProgressLocation
+	ProgressLocation,
 } from 'vscode';
 
 import {
@@ -34,9 +30,7 @@ import {
 	TransportKind,
 	CompletionRequest,
 	CompletionItemKind,
-	InsertTextFormat
 } from 'vscode-languageclient';
-import { editor } from './test/helper';
 
 
 export let client: LanguageClient;
@@ -94,7 +88,6 @@ export function activate(context: ExtensionContext) {
 
 					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
 					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
-					
 					let config = workspace.getConfiguration("future_c");
 					
 					let completion = config.get<string>("signaturhilfeBeiParserfunktionen");
@@ -106,6 +99,7 @@ export function activate(context: ExtensionContext) {
 							} else if(completion == "Signatur") {
 								element.insertText = element.label;
 							}
+							
 						}
 					});
 					return new CompletionList(items, false);
@@ -128,18 +122,31 @@ export function activate(context: ExtensionContext) {
 
 					let lineBeforeCursor = line.text.substring(0, pos.character);
 
-					let i = lineBeforeCursor.split(",").length - 1;
+					let i = 0;
+					let isInsideString = false;
+					let activeParam = 0;
+					while(i < lineBeforeCursor.length) {
+						let char = lineBeforeCursor.charAt(i++);
+						if(char == "\"") {
+							isInsideString = !isInsideString;
+						}
+
+						if(char == "," && !isInsideString) {
+							activeParam++;
+						}
+					}
+
 					let exit = lineBeforeCursor.search(/\b[cC]all:.*\(.*\)/);
 					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
 					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
 					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
-					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (i >= x.signatures[0].parameters.length)) {
+					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (activeParam >= x.signatures[0].parameters.length)) {
 						x = null;
 						return;
 					}
 
 					x = {
-						activeParameter: i,
+						activeParameter: activeParam,
 						activeSignature: x.activeSignature,
 						signatures: x.signatures
 					}
@@ -282,22 +289,23 @@ export function activate(context: ExtensionContext) {
 	
 
 	context.subscriptions.push(commands.registerCommand("create.hook", async () => {
-		let info = "Bitte geben Sie den Namen des Hooks ein.";
-
+		
 		let scriptNumber :number = await client.sendRequest("custom/GetScriptNumber", {
 			doc: window.activeTextEditor.document.uri.toString(),
 			pos: window.activeTextEditor.selection.active
 		});
-
+		
 		if(scriptNumber > 0) {
-
+			
+			let info = "Bitte geben Sie den Namen des Hooks ein.";
+			let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
 			let hookname = await window.showInputBox({
 				ignoreFocusOut: true,
 				valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
 				prompt: info,
 				value: "//ADDHOOK-"+scriptNumber+"-",
 				validateInput: (text :string) => {
-					let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
+					hookPattern.lastIndex = 0;
 					if(!hookPattern.exec(text)) {
 						return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
 					}
@@ -329,7 +337,8 @@ export function activate(context: ExtensionContext) {
 							name: hookname,
 							number: scriptNumber,
 							pos: window.activeTextEditor.selection.active,
-							oldDoc: window.activeTextEditor.document.uri.toString()
+							oldDoc: window.activeTextEditor.document.uri.toString(),
+							dontCheckOldDoc: false
 						});
 
 						setTimeout(() => {
@@ -352,8 +361,8 @@ export function activate(context: ExtensionContext) {
 							progress.report({message: "Ok ich geb auf..."});
 						}, 30000);
 
-						return pos.then((pos :Position) => {
-							if(pos.line > 0) {
+						return pos.then((bothPos :any) => {
+							if(bothPos.posScript.line >= 0) {
 								progress.report({ message: "Datei wird geöffnet."});
 								let snippet = new SnippetString(
 									["",
@@ -376,13 +385,26 @@ export function activate(context: ExtensionContext) {
 								window.activeTextEditor.edit((editbuilder) => {
 									editbuilder.insert(window.activeTextEditor.selection.active, hookname);
 								}).then((success) => {
-									let texteditor = window.showTextDocument(doc).then((texteditor) => {
-										progress.report({ message: "Hook wird erstellt."});
-										let position = new Position(pos.line, pos.character);
-										let range = new Range(position, position);
-										texteditor.revealRange(range, TextEditorRevealType.InCenter);					
-										texteditor.insertSnippet(snippet, position);
-									});
+									if(success) {
+										window.showTextDocument(doc, ViewColumn.Beside).then((texteditor) => {
+											progress.report({ message: "Hook wird erstellt."});
+											let position = new Position(bothPos.posScript.line, bothPos.posScript.character);
+											let range = new Range(position, position);
+											texteditor.revealRange(range, TextEditorRevealType.InCenter);					
+											texteditor.insertSnippet(snippet, position).then((success) => {
+												if(success) {
+													texteditor.edit((builder :TextEditorEdit) => {
+														let position = new Position(bothPos.posToc.line, 0);
+														builder.insert(position, "" + scriptNumber + "\t\t" + hookname + "\n");
+													});
+												} else {
+													window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
+												}
+											});
+										});
+									} else {
+										window.showErrorMessage("Hookname konnte im aktuellen Skript nicht eingefügt werden...");
+									}
 								})
 
 							} else {
@@ -397,6 +419,110 @@ export function activate(context: ExtensionContext) {
 			window.showErrorMessage("Kein gültiges Skript wird bearbeitet. Hook kann nicht erstellt werden.");
 		}
 
+	}));
+
+
+	context.subscriptions.push(commands.registerCommand("create.script", async () => {
+		let info = "Bitte geben Sie den Namen des neuen Skripts ein.";
+		let scriptName = await window.showInputBox({
+			ignoreFocusOut: true,
+			prompt: info,
+			validateInput: (text :string) => {
+				let hookPattern = new RegExp("^[0-9]+,[a-zA-ZöäüÖÄÜ_ ]+$", "g");
+				if(!hookPattern.exec(text)) {
+					return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+				}
+				return null;
+			}
+		});
+
+		if(scriptName) {
+			scriptName.trim();
+			let hookPattern = new RegExp("^([0-9]+),([a-zA-ZöäüÖÄÜ_ ]+)$", "g");
+			let m = hookPattern.exec(scriptName);
+
+			let scriptNumber :number = Number.parseInt(m[1]);
+			window.withProgress({
+				location: ProgressLocation.Notification,
+				cancellable: false
+			}, (progress, token) => {
+				progress.report({message: "Es wird nach passender Skriptstelle gesucht"})
+				let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
+					uri: window.activeTextEditor.document.uri.toString(),
+					name: m[2],
+					number: scriptNumber,
+					pos: window.activeTextEditor.selection.active,
+					oldDoc: window.activeTextEditor.document.uri.toString(),
+					dontCheckOldDoc: true
+				});
+
+				setTimeout(() => {
+					progress.report({message: "Jetzt samma dann gleich fertig..."});
+				}, 4000);
+
+				setTimeout(() => {
+					progress.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
+				}, 8000);
+
+				setTimeout(() => {
+					progress.report({message: "Ziemlich großes Skript..."});
+				}, 12000);
+
+				setTimeout(() => {
+					progress.report({message: "Jetzt reichts aber..."});
+				}, 16000);
+
+				setTimeout(() => {
+					progress.report({message: "Ok ich geb auf..."});
+				}, 30000);
+
+				return pos.then((bothPos :any) => {
+					if(bothPos.posScript.line >= 0) {
+
+						let snippet  = new SnippetString([
+							"",
+							"///////////////////////////////////////////////////////////////////////////////",
+							"",
+							"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
+							"\t\t${6:Erstellt ${7:asdasd}}",
+							"",
+							"///////////////////////////////////////////////////////////////////////////////",
+							"SCRIPT:"+m[1]+","+m[2]+",0,0,0,${3:Scripticon}",
+							"",
+							"\tH.LockThisScript();",
+							"\tS.RequestSaveAndUnlock(m_TabNr, m_RecNr);",
+							"\tS.LockActualRecord();",
+							"",
+							"\t$0",
+							"",
+							"\tS.UpdateActualRecord();",
+							"\tS.UnlockActualRecord();",
+							"",
+							"ENDSCRIPT",
+							"///////////////////////////////////////////////////////////////////////////////",
+							""
+						].join("\n"));
+	
+						let positionScript = new Position(bothPos.posScript.line, bothPos.posScript.character);
+						let range = new Range(positionScript, positionScript);
+						window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
+						window.activeTextEditor.insertSnippet(snippet, positionScript).then((success) => {
+							if(success) {
+								window.activeTextEditor.edit((editBuilder) => {
+									let position = new Position(bothPos.posToc.line, 0);
+									editBuilder.insert(position, m[1]+"\t\t"+m[2]+"\n");
+								});
+							} else {
+								window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
+							}
+						});
+						
+					} else {
+						window.showErrorMessage("Es existiert bereits ein Skript / Hook mit dieser Nummer");
+					}
+				});
+			});
+		}
 	}));
 
 	//

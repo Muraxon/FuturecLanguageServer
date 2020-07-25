@@ -67,18 +67,7 @@
 					"langId": "futurec",
 					"name": "New Function"
 				}
-			},
-			{
-				"name": "Neues Skript erstellen",
-				"command": "editor.action.insertSnippet",
-				"when": "editorTextFocus",
-				"key": "Ctrl+numpad1",
-				"args": {
-					"langId": "futurec",
-					"name": "New Script"
-				}
-			},
-			{
+			}, {
 				"name": "Changekommentar erstellen",
 				"command": "editor.action.insertSnippet",
 				"when": "editorTextFocus",
@@ -93,8 +82,12 @@
 				"when": "editorTextFocus"
 			}, {
 				"command": "create.hook",
-				"key": "Ctrl+j h",
+				"key": "Ctrl+numpad3",
 				"when": "editorTextFocus"
+			}, {
+				"command": "create.script",
+				"when": "editorTextFocus",
+				"key": "Ctrl+numpad1"
 			}
 		],
 		"commands": [
@@ -107,6 +100,9 @@
 			}, {
 				"command": "create.hook",
 				"title": "Hook erstellen"
+			}, {
+				"command": "create.script",
+				"title": "Skript erstellen"
 			}
 		]
 	},

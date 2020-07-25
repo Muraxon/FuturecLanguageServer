@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover, MarkupContent } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
 import { parserFunctions } from '../server';
 
@@ -33,26 +33,41 @@ export class ParserFunctions {
 				while (result.root.snippet[i]) {
 	
 					let docu = "";
-					let docuParameter = "";
 					if(result.root.snippet[i].notes) {
-						docu = result.root.snippet[i].notes[0];
-						docuParameter = docu;
-					} else {
-						docu = result.root.snippet[i].keyword[0];
+						docu = <string>(result.root.snippet[i].notes[0]);
 					}
-	
+					docu = docu.trim();
+
 					let returnValue = "";
 					if(result.root.snippet[i].returnvalue) {
 						returnValue = <string>result.root.snippet[i].returnvalue[0];
 						docu = "`return " + this.getMappedReturnValue(returnValue) + "`" + "\n\n" + docu;
 					}
-	
+					docu = docu.trim();
+
+					while(docu.search("\r") >= 0) {
+						docu = docu.replace("\r", "");
+					} 
+					// while(docu.search("\n") > 0) {
+					// 	docu = docu.replace("\n", "EOL");
+					// } 
+					while(docu.search("\t") >= 0) {
+						docu = docu.replace("\t", "");
+					} 
+
+					// while(docu.search("EOL") > 0) {
+					// 	docu = docu.replace("EOL", "\n\n");
+					// } 
+					let docuParameter = docu;
+
+					let docuMark :MarkupContent = {
+						kind: MarkupKind.Markdown,
+						value: docu
+					};
+
 					let item :CompletionItem = {
 						label: <string>result.root.snippet[i].keyword[0],
-						documentation: {
-							kind: MarkupKind.Markdown,
-							value: docu
-						},
+						documentation: docuMark,
 						kind: CompletionItemKind.Method,
 						insertTextFormat: InsertTextFormat.Snippet,
 						insertText: <string>result.root.snippet[i].text[0]
@@ -135,7 +150,6 @@ export class ParserFunctions {
 			
 			
 		});
-
 	}
 
 	getMappedReturnValue(val :string) :string{
@@ -180,37 +194,37 @@ export class ParserFunctions {
 
 	getDialogFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemDialog, pos);
-		return this.m_CompletionItemDialog
+		return this.m_CompletionItemDialog;
 	}
 	
 	getDatabaseFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemDatabase, pos);
-		return this.m_CompletionItemDatabase
+		return this.m_CompletionItemDatabase;
 	}
 
 	getFileFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemFile, pos);
-		return this.m_CompletionItemFile
+		return this.m_CompletionItemFile;
 	}
 
 	getHelperFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemHelper, pos);
-		return this.m_CompletionItemHelper
+		return this.m_CompletionItemHelper;
 	}
 
 	getCStringFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemCString, pos);
-		return this.m_CompletionItemCString
+		return this.m_CompletionItemCString;
 	}
 
 	getTableFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemTable, pos);
-		return this.m_CompletionItemTable
+		return this.m_CompletionItemTable;
 	}
 
 	getMoneyFunctions(pos :Position) {
 		this.adjustCompletionItem(this.m_CompletionItemCMoney, pos);
-		return this.m_CompletionItemCMoney
+		return this.m_CompletionItemCMoney;
 	}
 
 	getDateTimeFunctions(pos :Position) {
@@ -224,7 +238,7 @@ export class ParserFunctions {
 	}
 
 	getConstantVariables() {
-		return this.m_CompletionItemConstants
+		return this.m_CompletionItemConstants;
 	}
 
 	static m_keyword = /\b(int|BOOL|CString|double|CTable|CMoney|CDateTime|FALSE|TRUE|AND|OR|STRING_LINEBREAK|m_Rec|m_TabNr|m_JobNr|D|F|P|S|H|if|while|return|funcreturn|includescript)\b/;

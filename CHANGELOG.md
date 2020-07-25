@@ -32,6 +32,14 @@ All notable changes to this project will be documented in this file.
 - added rudimentary support for variable in `foreachrow` and `foreachrowreverse` - [Issue](https://github.com/Muraxon/FuturecLanguageServer/issues/5)
 - other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/405da8a3232a9745c1eceed404203f9d1662ef6a) for more information
 
-
+## [1.1.2] - 25.07.2020
+- changed the functionality for createing hooks / scripts
+  - for more details see [README](README.md)
+- removed pure snippets for hooks / scripts
+- improved `onSignature`
+  - now `,` inside literals like `"Hello, i am robot, haha"` dont get recognized anymore (better usability for specific functions)
+  - only *pure* `,` which are not inside an *string* get recognized to correct parameter
+- improved possible documentation for parserfunctions
+  - now the `<notes>`-tag gets parsed properly for popups
 
 

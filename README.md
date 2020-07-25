@@ -72,38 +72,37 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   > Aktuell werden nur Dateien aus dem Standard-Ordner gecached.
   > Das heißt das Dateiübergreifende Finden / GoTo usw. wird erst dann funktionieren wenn man mehrere Dateien gleichzeitig offen hat
   ___
-## Features
-#### Keybindings
-##### Ctrl + numpad0:
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl0.gif)
+
+## Keybindings
+
+| **Shorcut** |     | **Usage** |
+| --- | --- | --- |
+| **Ctrl + numpad0** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl0.gif) |
+| **Ctrl + numpad1** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl1_V2.gif) |
+| **Ctrl + numpad2** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl2.gif) |
+| **Ctrl + numpad3** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl3_V2.gif) |
   ___
-##### Ctrl + numpad1:
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl1.gif)
-  ___
-##### Ctrl + numpad2:
- ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl2.gif)
-  ___
-#### Function:
+## Function:
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/functionSignatureHover.gif)
   ___
-#### Function GoTo:
+## Function GoTo:
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/functionGoTo.gif)
   ___
-#### Script:
+## Includescript GoTo:
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/ScriptHoverGoTo.gif)
   ___
-#### Datenbankspalten:
+## Datenbankspalten:
 Wird mit Ctrl+Space aktiviert wenn der Cursor über einer Zahl ist und in der aktuellen Zeile ein Befehl steht, der mit der Datenbank kommuniziert
   ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/databasecolumnsfind.gif)
   ___
-#### Parserfunctions:
+## Parserfunctions:
   ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserFunctions.gif)
   ___
   ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionParserObjectFunctions.gif)
   ___
   ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/completionUserFunction.gif)
 
-### Config:
+## Config:
 - Im Optionsmenü [`Ctrl + ,`] kann zwischen **Snippet** und **Signatur** gewählt werden
   - Signatur:
     - Einstellung:
