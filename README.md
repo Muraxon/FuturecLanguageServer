@@ -80,7 +80,7 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
 | **Ctrl + numpad0** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl0.gif) |
 | **Ctrl + numpad1** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl1_V2.gif) |
 | **Ctrl + numpad2** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl2.gif) |
-| **Ctrl + numpad3** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl3_V2.gif) |
+| **Ctrl + numpad3** |     | ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/keybindingctrl3.gif) |
   ___
 ## Function:
  ![](https://raw.githubusercontent.com/Muraxon/FuturecLanguageServer/master/demo/functionSignatureHover.gif)
