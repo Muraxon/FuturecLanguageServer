@@ -430,7 +430,7 @@ export function activate(context: ExtensionContext) {
 			validateInput: (text :string) => {
 				let hookPattern = new RegExp("^[0-9]+,[a-zA-ZöäüÖÄÜ_ ]+$", "g");
 				if(!hookPattern.exec(text)) {
-					return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+					return "Skriptname muss Pattern " + hookPattern.source + " entsprechen";
 				}
 				return null;
 			}
