@@ -30,7 +30,11 @@ import {
 	CompletionList,
 	TextEdit,
 	DocumentLink,
-	TextDocumentChangeEvent
+	TextDocumentChangeEvent,
+	DocumentHighlight,
+	SymbolInformation,
+	SymbolKind,
+	FoldingRange
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
@@ -127,13 +131,15 @@ connection.onInitialized(() => {
 // The example settings
 interface ExampleSettings {
 	signaturhilfeBeiParserfunktionen: string;
+	CodeLens: Boolean;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
 // Please note that this is not the case when using this server with the client provided in this example
 // but could happen with other clients.
 const defaultSettings: ExampleSettings = { 
-	signaturhilfeBeiParserfunktionen: "Snippet"
+	signaturhilfeBeiParserfunktionen: "Snippet",
+	CodeLens: true
 };
 
 let globalSettings: ExampleSettings = defaultSettings;
@@ -397,7 +403,7 @@ connection.onCompletion((param: CompletionParams, token): CompletionItem[] | Com
 
 	let completionitems :CompletionItem[] = new Array();
 
-	if(param.context) {
+	if(param.context && param.context.triggerCharacter) {
 		CurrentCompletionCharacter = param.context.triggerCharacter;
 	}
 
@@ -425,58 +431,54 @@ connection.onCompletionResolve(
 	}
 );
 
+
 let codelens :CodeLens[] = [];
-connection.onCodeLens((params, token):CodeLens[] => {
+connection.onCodeLens(async (params, token):Promise<CodeLens[]> => {
 	let doc = documents.get(params.textDocument.uri);
+	codelens = [];
 	if(doc) {
-		let text = doc.getText();
-		let pattern = /^.*\bS\.(Select|(Set|Add)....?.?.?.?.?.?.?.?)\(.*\)\;.*$/gm;
-		let patternFunction = /S\..*/g;
-		codelens = [];
-		let m :RegExpExecArray|null = null;
-		while(m = pattern.exec(text)) {
-
-			patternFunction.lastIndex = m.index;
-
-			m = patternFunction.exec(text);
-			if(m) {
-				
-
-				let patternStart = /\(/g;
-				patternStart.lastIndex = m.index + 1;
-				let startNumber = patternStart.exec(text);
-				if(startNumber) {
-					startNumber.index++;
-
-					let patternEnd = /\,/g;
-					patternEnd.lastIndex = startNumber.index;
-					let endNumber = patternEnd.exec(text);
-					if(endNumber) {
-						let tableNumber = text.substring(startNumber.index, endNumber.index);
-						let pos = doc.positionAt(startNumber.index);
-						let number = parseInt(tableNumber);
-
-						let fallback = "";
-						if(isNaN(number)) {
-							number = 90;
-							fallback = " fallback auf Tabelle 90, weil nicht bestimmbar"
-						}
-						codelens.push({
-							range: {start: {character: pos.character, line: pos.line}, end: {character: pos.character, line: pos.line}},
-							command: {
-								title: "Spalten anzeigen" + fallback,
-								command: "Show.columns",
-								arguments: [number]
-							}
-						});
-					}
+		let setting = await documentSettings.get(params.textDocument.uri);
+		if(setting && setting.CodeLens) {
+			let text = doc.getText();
+			let pattern = /^SCRIPT:([0-9]+),.*$/gm;
+			let m = pattern.exec(text);
+			while(m) {
 	
-				}
-
+				let pos = doc.positionAt(pattern.lastIndex);
+				codelens.push({
+					range: {
+						end: pos,
+						start: pos
+					},
+					command: {
+						command: "custom.add.create.design.entry",
+						title: "Skript in Design einfügen",
+						arguments: [{
+							scriptNumber: Number.parseInt(m[1])
+						}]
+					},
+					data: Number.parseInt(m[2])
+				});
+	
+				codelens.push({
+					range: {
+						end: pos,
+						start: pos
+					},
+					command: {
+						command: "custom.delete.design.entry",
+						title: "Skript aus Design entfernen",
+						arguments: [{
+							scriptNumber: Number.parseInt(m[1])
+						}]
+					},
+					data: Number.parseInt(m[2])
+				});
+	
+				m = pattern.exec(text);
 			}
 		}
 	}
-
 	return codelens;
 });
 

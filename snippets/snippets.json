@@ -1,47 +1,40 @@
 {
-	"New Script": {
-		"prefix": "Create Script",
-		"body": [
-			"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
-			"\t\t${6:Erstellt ${7:asdasd}}",
-			"",
-			"///////////////////////////////////////////////////////////////////////////////",
-			"SCRIPT:${1:Scriptnumber},${2:Scriptname},0,0,0,${3:Scripticon}",
-			"",
-			"\tH.LockThisScript();",
-			"\tS.RequestSaveAndUnlock(m_TabNr, m_RecNr);",
-			"\tS.LockActualRecord();",
-			"",
-			"\t$0",
-			"",
-			"\tS.UpdateActualRecord();",
-			"\tS.UnlockActualRecord();",
-			"",
-			"ENDSCRIPT",
-			"///////////////////////////////////////////////////////////////////////////////"
-		],
-		"description":"Erstellt ein neues Skript mit Changekommentar usw."
-	},
-	"New Function": {
-		"prefix": "Create Function",
-		"body": [
-			"$LINE_COMMENT ${5:Documentation}",
-			"FUNCTION: ${1|void,CString,CTable,int,double|} ${2:Functionname}(${3:Parameter});",
-			"\t$1 ${4:Variabale};",
-			"\t$0",
-			"\t",
-			"\tfuncreturn ${4:Variabale};",
-			"ENDFUNCTION;"
-		],
-		"description":"Erstellt eine neue Function"
-	},
-	"New Changecomment": {
-		"prefix": "Create Changecomment",
-		"body": [
-			"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${1:Name}\t$LINE_COMMENT AP-ID:${2:ID}",
-			"\t\t${3:Comment}",
-			"\t\t$0"
-		],
-		"description":"Erstellt einen neuen Changekommentar"
-	}
+    "New Function": {
+        "prefix": "Create Function",
+        "body": [
+            "$LINE_COMMENT ${5:Documentation}",
+            "FUNCTION: ${1|void,CString,CTable,int,double|} ${2:Functionname}(${3:Parameter});",
+            "\t$1 ${4:Variabale};",
+            "\t$0",
+            "\t",
+            "\tfuncreturn ${4:Variabale};",
+            "ENDFUNCTION;"
+        ],
+        "description": "Erstellt eine neue Function"
+    },
+    "New Changecomment": {
+        "prefix": "Create Changecomment",
+        "body": [
+            "CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${1:Name}\t$LINE_COMMENT AP-ID:${2:ID}",
+            "\t\t${3:Comment}",
+            "\t\t$0"
+        ],
+        "description": "Erstellt einen neuen Changekommentar"
+    },
+    "New Param": {
+        "prefix": "Create new Paramnote",
+        "body": [
+            "*@param* `${1:Param}` __ ${2:Description}  ",
+            "$0"
+        ],
+        "description": "Erstellt ein neuen Eintrag für <notes>."
+    },
+    "New Scriptexplanation": {
+        "prefix": "Create Scriptexplanation",
+        "body": [
+            "```futurec  ",
+            "$0  ",
+            "```"
+        ]
+    }
 }

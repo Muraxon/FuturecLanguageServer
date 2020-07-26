@@ -42,4 +42,14 @@ All notable changes to this project will be documented in this file.
 - improved possible documentation for parserfunctions
   - now the `<notes>`-tag gets parsed properly for popups
 
-
+## [1.1.3] - 26.07.2020
+- added functionality for creating / deleting entries in design-files
+  - for more details see [README](README.md)
+  - Code Lenses were implemented
+- fixed bug where onHover shows garbage
+  - `FUNCTION: CTable tTestung(...)`
+    - Hovering over a call of that function resulted in garbage info
+- improved hovering over Parserfunctions
+  - they now show the documentation
+- improved signature-help
+  - now does show proper documentation for that function

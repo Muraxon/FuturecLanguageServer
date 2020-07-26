@@ -1,123 +1,140 @@
 {
-	"name": "future-c",
-	"description": "Future C - Languageserver für hausinterne Skriptsprache",
-	"author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
-	"license": "MIT",
-	"version": "1.1.2",
-	"publisher": "marcel-sotiropoulos",
-	"categories": [],
-	"keywords": [
-		"multi-root ready"
-	],
-	"engines": {
-		"vscode": "^1.33.0"
-	},
-	"activationEvents": [
-		"onLanguage:futurec"
-	],
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/Muraxon/FuturecLanguageServer.git"
-	},
-	"main": "./client/out/extension",
-	"contributes": {
-		"configuration": {
-			"type": "object",
-			"title": "Future C",
-			"properties": {
-				"future_c.signaturhilfeBeiParserfunktionen": {
-					"scope": "window",
-					"type": "string",
-					"enum": [
-						"Snippet",
-						"Signatur"
-					],
-					"default": "Snippet",
-					"description": "Wenn auf Snippet gestellt wird, dann werden die Parserfunktionen mit einem Snippet erstellt. Wenn auf Signatur gestellt, dann wird eine Signaturhilfe gegeben sobald man den Befehl eingibt"
-				}
-			}
-		},
-		"languages": [
-			{
-			  "id": "futurec",
-			  "extensions": [".cpp"],
-			  "configuration": "./language-configuration.json"
-			}
-		],
-		"grammars": [
-			{
-				"language": "futurec",
-				"scopeName": "source.ffscript",
-				"path": "./syntaxes/ffscript.tmLanguage.json"
-			}
-		],
-		"snippets": [
-			{
-				"language": "futurec",
-				"path": "./snippets/snippets.json"
-			}
-		],
-		"keybindings": [
-			{
-				"name": "Neue Function erstellen",
-				"command": "editor.action.insertSnippet",
-				"when": "editorTextFocus",
-				"key": "Ctrl+numpad0",
-				"args": {
-					"langId": "futurec",
-					"name": "New Function"
-				}
-			}, {
-				"name": "Changekommentar erstellen",
-				"command": "editor.action.insertSnippet",
-				"when": "editorTextFocus",
-				"key": "Ctrl+numpad2",
-				"args": {
-					"langId": "futurec",
-					"name": "New Changecomment"
-				}
-			}, {
-				"command": "jump.to.start.of.script",
-				"key": "Ctrl+j s",
-				"when": "editorTextFocus"
-			}, {
-				"command": "create.hook",
-				"key": "Ctrl+numpad3",
-				"when": "editorTextFocus"
-			}, {
-				"command": "create.script",
-				"when": "editorTextFocus",
-				"key": "Ctrl+numpad1"
-			}
-		],
-		"commands": [
-			{
-				"command": "Check.Skript.Syntax",
-				"title": "Check Skript Syntax"
-			}, {
-				"command": "jump.to.start.of.script",
-				"title": "Jump to start of script"
-			}, {
-				"command": "create.hook",
-				"title": "Hook erstellen"
-			}, {
-				"command": "create.script",
-				"title": "Skript erstellen"
-			}
-		]
-	},
-	"scripts": {
-		"vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
-		"compile": "tsc -b",
-		"watch": "tsc -b -w",
-		"postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
-		"test": "sh ./scripts/e2e.sh"
-	},
-	"devDependencies": {
-		"@types/mocha": "^5.2.7",
-		"@types/node": "^12.11.7",
-		"tslint": "^5.16.0",
-		"typescript": "^3.6.4"
-	},
-	"icon": "logo.png"
+    "name": "future-c",
+    "description": "Future C - Languageserver für hausinterne Skriptsprache",
+    "author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
+    "license": "MIT",
+    "version": "1.1.3",
+    "publisher": "marcel-sotiropoulos",
+    "categories": [],
+    "keywords": [
+        "multi-root ready"
+    ],
+    "engines": {
+        "vscode": "^1.33.0"
+    },
+    "activationEvents": [
+        "onLanguage:futurec"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Muraxon/FuturecLanguageServer.git"
+    },
+    "main": "./client/out/extension",
+    "contributes": {
+        "configuration": {
+            "type": "object",
+            "title": "Future C",
+            "properties": {
+                "future_c.SignaturhilfeBeiParserfunktionen": {
+                    "scope": "application",
+                    "type": "string",
+                    "enum": [
+                        "Snippet",
+                        "Signatur"
+                    ],
+                    "enumDescriptions": ["Fügt Parserfunktionen als Snippet ein - alle vormarkiert - und werden mit Tab ersetzt", "Wie bei anderen Programmiersprachen zeigt diese Option die Parameter als Liste an, ohne sie vorher einzufügen"],
+                    "default": "Snippet",
+                    "description": "Wenn auf Snippet gestellt wird, dann werden die Parserfunktionen mit einem Snippet erstellt. Wenn auf Signatur gestellt, dann wird eine Signaturhilfe gegeben sobald man den Befehl eingibt"
+                },
+                "future_c.CodeLens": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Wenn aktiviert wird im aktuellen Editor CodeLens aktiviert - diese zeigen ober dem SCRIPT:-Teil eine Optionen für das Hinzufügen / Entfernen des Skripts aus dem Design an"
+                }
+            }
+        },
+        "languages": [{
+            "id": "futurec",
+            "extensions": [".cpp"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "futurec",
+            "scopeName": "source.ffscript",
+            "path": "./syntaxes/ffscript.tmLanguage.json"
+        }],
+        "snippets": [{
+            "language": "futurec",
+            "path": "./snippets/snippets.json"
+        }],
+        "keybindings": [{
+                "name": "Neuen Skripterklärung",
+                "command": "editor.action.insertSnippet",
+                "when": "editorTextFocus",
+                "key": "Ctrl+numpad9",
+                "args": {
+                    "langId": "futurec",
+                    "name": "New Scriptexplanation"
+                }
+            }, {
+                "name": "Neuen param",
+                "command": "editor.action.insertSnippet",
+                "when": "editorTextFocus",
+                "key": "Ctrl+numpad8",
+                "args": {
+                    "langId": "futurec",
+                    "name": "New Param"
+                }
+            },
+            {
+                "name": "Neue Function erstellen",
+                "command": "editor.action.insertSnippet",
+                "when": "editorTextFocus",
+                "key": "Ctrl+numpad0",
+                "args": {
+                    "langId": "futurec",
+                    "name": "New Function"
+                }
+            }, {
+                "name": "Changekommentar erstellen",
+                "command": "editor.action.insertSnippet",
+                "when": "editorTextFocus",
+                "key": "Ctrl+numpad2",
+                "args": {
+                    "langId": "futurec",
+                    "name": "New Changecomment"
+                }
+            }, {
+                "command": "jump.to.start.of.script",
+                "key": "Ctrl+j s",
+                "when": "editorTextFocus"
+            }, {
+                "command": "create.hook",
+                "key": "Ctrl+numpad3",
+                "when": "editorTextFocus"
+            }, {
+                "command": "create.script",
+                "when": "editorTextFocus",
+                "key": "Ctrl+numpad1"
+            }
+        ],
+        "commands": [{
+            "command": "Check.Skript.Syntax",
+            "title": "Check Skript Syntax"
+        }, {
+            "command": "jump.to.start.of.script",
+            "title": "Jump to start of script"
+        }, {
+            "command": "create.hook",
+            "title": "Hook erstellen"
+        }, {
+            "command": "create.script",
+            "title": "Skript erstellen"
+        }]
+    },
+    "scripts": {
+        "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+        "compile": "tsc -b",
+        "watch": "tsc -b -w",
+        "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
+        "test": "sh ./scripts/e2e.sh"
+    },
+    "devDependencies": {
+        "@types/mocha": "^5.2.7",
+        "@types/node": "^12.11.7",
+        "tslint": "^5.16.0",
+        "typescript": "^3.6.4"
+    },
+    "icon": "logo.png"
 }

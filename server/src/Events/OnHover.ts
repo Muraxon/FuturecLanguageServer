@@ -25,7 +25,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 			let DocumentText = value.getText();
 
 			let pattern:RegExp = new RegExp("^\\s*(SCRIPT:" + functionname + ",|FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + functionname + "\\(.*\\)|INSERTINTOSCRIPT:[0-9]+,\\/\\/" + functionname + ").*$", "gm");
-			let patternBeginrealFunction = /(void|double|CString|int|BOOL)/g;
+			let patternBeginrealFunction = /(void|double|CString|int|BOOL|CTable)/g;
 
 			let m = pattern.exec(DocumentText);
 			while(m) {

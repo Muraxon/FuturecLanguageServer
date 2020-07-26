@@ -58,7 +58,6 @@ export class ParserFunctions {
 					// while(docu.search("EOL") > 0) {
 					// 	docu = docu.replace("EOL", "\n\n");
 					// } 
-					let docuParameter = docu;
 
 					let docuMark :MarkupContent = {
 						kind: MarkupKind.Markdown,
@@ -100,7 +99,7 @@ export class ParserFunctions {
 									label: this.getMappedReturnValue(returnValue) + " " + <string>result.root.snippet[i].keyword[0],
 									documentation: {
 										kind: MarkupKind.Markdown,
-										value: ['```futurec', ParameterStringComplete.trim(), "```", docuParameter].join("\n")
+										value: ['```futurec', ParameterStringComplete.trim(), "```", "", docu].join("\n")
 									},
 									parameters: ParameterInfo
 								});
@@ -112,7 +111,7 @@ export class ParserFunctions {
 						if(signatureString.length <= 0) {
 							signatureString = "(void)";
 						}
-						this.m_FunctionHoverStrings.set(item.label.trim(),  ["```futurec", signatureString.trim(), "```"].join("\n") + "\n" + "`return " + this.getMappedReturnValue(returnValue) + "`");
+						this.m_FunctionHoverStrings.set(item.label.trim(),  ["```futurec", signatureString.trim(), "```", "", docu].join("\n"));
 					}
 	
 					if(result.root.snippet[i].context != undefined) {
