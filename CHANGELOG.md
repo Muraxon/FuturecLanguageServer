@@ -53,3 +53,4 @@ All notable changes to this project will be documented in this file.
   - they now show the documentation
 - improved signature-help
   - now does show proper documentation for that function
+- other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/129f19241ec761439a8a7e41c3e141de6a45f626) for more information
