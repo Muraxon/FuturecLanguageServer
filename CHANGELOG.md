@@ -55,7 +55,7 @@ All notable changes to this project will be documented in this file.
   - now does show proper documentation for that function
 - other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/129f19241ec761439a8a7e41c3e141de6a45f626) for more information
 
-## [1.1.4] - 26.07.2020
+## [1.1.4] - 29.07.2020
 - added functionality adding images / gifs / filelinks inside the hover
 - fixed bug indendation is not correct
   - if you go inside curly brackets
