@@ -60,3 +60,4 @@ All notable changes to this project will be documented in this file.
 - fixed bug indendation is not correct
   - if you go inside curly brackets
 - Hovering now shows at the start of the given *word*
+- other small changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/0d912194adc2a1581ff339a23c3837e0c4e8c2ed) for more information
