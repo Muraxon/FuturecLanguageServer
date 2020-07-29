@@ -263,12 +263,12 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
 	let doc = documents.get(param2);
 	if(doc) {
-		//let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
+		/*let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
 		
-		/*connection.sendDiagnostics({
+		connection.sendDiagnostics({
 			diagnostics: diag,
 			uri: param2
-		})*/
+		});*/
 	}
 });
 
@@ -286,9 +286,9 @@ connection.onNotification("custom/sendFilename", (uris: string[]) => {
 	});
 });
 
-connection.onNotification("custom/sendParserFunctionXML", (uri :string) => {
+connection.onNotification("custom/sendParserFunctionXML", (obj :any) => {
 
-	parserFunctions.buildFunctions(uri);
+	parserFunctions.buildFunctions(obj.uri, obj.root);
 
 });
 

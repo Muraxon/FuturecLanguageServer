@@ -14,10 +14,10 @@ export class TextParser {
 		let offset = pos.character;
 		let char = text.charAt(pos.character);
 
-		let hookRegex = /\s*\/\/(ADDHOOK.*[0-9]+.*)\s*/g;
+		let hookRegex = /(\s*)\/\/(ADDHOOK.*[0-9]+.*)\s*/g;
 		let hookM = hookRegex.exec(text);
 		if(hookM) {
-			let hookPos = new CursorPositionInformation(hookM[1], char.trim(), CursorPositionType.ADDHOOK, "");
+			let hookPos = new CursorPositionInformation(hookM[2], char.trim(), CursorPositionType.ADDHOOK, "", hookM[1].length);
 			return hookPos;
 		}
 
@@ -129,7 +129,7 @@ export class TextParser {
 			type = CursorPositionType.VARIABLE;
 		}
 
-		let info :CursorPositionInformation = new CursorPositionInformation(word.trim(), charAtPos.trim(), type, context.trim());
+		let info :CursorPositionInformation = new CursorPositionInformation(word.trim(), charAtPos.trim(), type, context.trim(), start);
 
 		return info;
 	}

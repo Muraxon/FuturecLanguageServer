@@ -13,14 +13,13 @@ import { workspace,
 	window,
 	ViewColumn, 
 	TextEditorRevealType, 
-	CodeLens, 
 	CompletionItem,
 	SnippetString,
 	CompletionList,
 	Range,
 	TextEditorEdit,
 	ProgressLocation,
-	Selection,
+	Selection
 } from 'vscode';
 
 import {
@@ -41,6 +40,7 @@ let lastPos: Position | null = null;
 let resimportattributes = workspace.findFiles("**/*importattributes*");
 
 export function activate(context: ExtensionContext) {
+
 	// The server is implemented in node
 	let serverModule = context.asAbsolutePath(
 		path.join('server', 'out', 'server.js')
@@ -72,7 +72,6 @@ export function activate(context: ExtensionContext) {
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
 			provideCompletionItem: async (doc, pos, context) => {
-				
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = "";
 				if(rangeAtPos) {
@@ -181,7 +180,12 @@ export function activate(context: ExtensionContext) {
 			res2.forEach((value) => {
 				filename = value.toString();
 			});
-			client.sendNotification("custom/sendParserFunctionXML", filename);
+
+			let root_path = workspace.workspaceFolders[0].uri.toString();
+			client.sendNotification("custom/sendParserFunctionXML", {
+				uri: filename,
+				root: root_path
+			});
 		})
 
 		client.onNotification("custom/getCursorPos", async () => {
@@ -225,7 +229,7 @@ export function activate(context: ExtensionContext) {
 			try {
 				let position = new Position(pos.line, pos.character);
 				let range = new Range(position, position);
-
+				
 				window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
 			} catch (error) {
 				
@@ -599,10 +603,12 @@ export function activate(context: ExtensionContext) {
 								let range = new Range(position, position);
 								window.showTextDocument(doc, ViewColumn.Beside).then((editor) => {
 									editor.revealRange(range, TextEditorRevealType.InCenter);
+									
 									editor.edit((builder) => {
 										let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
 										builder.insert(position, string);
 									}).then((success) => {
+
 
 										let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
 										editor.selection = new Selection(position ,doc.positionAt(index+string.length));

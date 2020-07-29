@@ -100,60 +100,69 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 		}
 	}
 	else if(word.isValid()) {
+		if(word.m_word == "m_Rec" || word.m_word == "m_Rec2" || word.m_word == "m_TabNr") {
+			let temp = parserFunctions.getHover(word.m_word);
+			if(temp) {
+				hoverString = temp;
+			} else {
+				hoverString = "notes not found";
+			}
+		} else {
+
+			let notVariableDefinition = /\b(ENDFUNCTION|FUNCTION|funcreturn|TRUE|FALSE|int|double|float|CString|BOOL|CTable|CMoney|CDateTime|if|while|foreach|foreachrow|for|\{|\}|\(|\)|\;|STRING_QUOTE|STRING_LINEFEED|STRING_LINEBREAK|STRING_TAB|STRING_RAUTE|STRING_BRACKETCLOSE|STRING_BRACKETOPEN|STRING_PARENTHESISCLOSE|STRING_PARENTHESISOPEN|STRING_BACKSLASH1|STRING_BACKSLASH2|STRING_SLASH2|STRING_SLASH1|STRING_CARRIAGERETURN)\b/;
 	
-		let notVariableDefinition = /\b(ENDFUNCTION|FUNCTION|m_Rec|funcreturn|TRUE|FALSE|int|double|float|CString|BOOL|CTable|CMoney|CDateTime|if|while|foreach|foreachrow|for|\{|\}|\(|\)|\;|STRING_QUOTE|STRING_LINEFEED|STRING_LINEBREAK|STRING_TAB|STRING_RAUTE|STRING_BRACKETCLOSE|STRING_BRACKETOPEN|STRING_PARENTHESISCLOSE|STRING_PARENTHESISOPEN|STRING_BACKSLASH1|STRING_BACKSLASH2|STRING_SLASH2|STRING_SLASH1|STRING_CARRIAGERETURN)\b/;
-
-		let mNotVar = notVariableDefinition.exec(word.m_word);
-		if(!mNotVar) {
-
-			let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true);
-
-			if(script) {
-				try {
-					let VariableDefinition = new RegExp("(double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + word.m_word + "\\s*(\\;|\\=)", "g");
-					let VariableDefinitionEnd = /$/gm;
-					let m = VariableDefinition.exec(script.m_scripttext);
-					if(m) {
-						VariableDefinitionEnd.lastIndex = m.index;
-						let m2 = VariableDefinitionEnd.exec(script.m_scripttext);
-						if(m2) {
+			let mNotVar = notVariableDefinition.exec(word.m_word);
+			if(!mNotVar) {
+	
+				let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true);
+	
+				if(script) {
+					try {
+						let VariableDefinition = new RegExp("(double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + word.m_word + "\\s*(\\;|\\=)", "g");
+						let VariableDefinitionEnd = /$/gm;
+						let m = VariableDefinition.exec(script.m_scripttext);
+						if(m) {
+							VariableDefinitionEnd.lastIndex = m.index;
+							let m2 = VariableDefinitionEnd.exec(script.m_scripttext);
+							if(m2) {
+			
+								hoverString = "- " + script.m_scripttext.substring(m.index, m2.index).trim();
 		
-							hoverString = "- " + script.m_scripttext.substring(m.index, m2.index).trim();
-	
-							let patternAssignment = new RegExp("^.*\\b" + word.m_word + "\\b.*$", "gm");
-							patternAssignment.lastIndex = m2.index;
-							
-							while(m = patternAssignment.exec(script.m_scripttext)) {
-								VariableDefinitionEnd.lastIndex = m.index;
-								let m3 = VariableDefinitionEnd.exec(script.m_scripttext);
-								if(m3) {
-									let line = script.m_scripttext.substring(m.index, m3.index).trim();
-									if(line.search(/^\s*(FUNCTION:|\/\/)/) < 0) {
-										hoverString += "\n- " + line;
+								let patternAssignment = new RegExp("^.*\\b" + word.m_word + "\\b.*$", "gm");
+								patternAssignment.lastIndex = m2.index;
+								
+								while(m = patternAssignment.exec(script.m_scripttext)) {
+									VariableDefinitionEnd.lastIndex = m.index;
+									let m3 = VariableDefinitionEnd.exec(script.m_scripttext);
+									if(m3) {
+										let line = script.m_scripttext.substring(m.index, m3.index).trim();
+										if(line.search(/^\s*(FUNCTION:|\/\/)/) < 0) {
+											hoverString += "\n- " + line;
+										}
 									}
 								}
 							}
 						}
+					} catch (error) {
+						hoverString = error;
 					}
-				} catch (error) {
-					hoverString = error;
+		
+					if(hoverString.length > 0) {
+						hoverString = [
+							'## Usages: ' + word.m_word,
+							'```futurec',
+							hoverString,
+							'```'
+						].join("\n");
+					} else { hoverString = ""; }
 				}
-	
-				if(hoverString.length > 0) {
-					hoverString = [
-						'## Usages: ' + word.m_word,
-						'```futurec',
-						hoverString,
-						'```'
-					].join("\n");
-				} else { hoverString = ""; }
+			} else {
+				hoverString = "no definition for keyword";
 			}
-		} else {
-			hoverString = "no definition for keyword";
 		}
 	}
-
-	let startChar = pos.character - word!.m_word.length + 5;
+	
+	let startChar = word.m_OffsetOnLine;
 	if(startChar <= 0) {startChar = 0;}
 
 	return {
@@ -163,7 +172,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 		},
 		range: {
 			start: {character: startChar, line: pos.line },
-			end: {character: pos.character, line: pos.line }
+			end: {character: word.m_OffsetOnLine + word.m_word.length, line: pos.line }
 		}
 	};
 }

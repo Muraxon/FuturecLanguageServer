@@ -4,12 +4,14 @@ export class CursorPositionInformation {
 	m_char :string = "";
 	m_type :CursorPositionType = CursorPositionType.UNDEFINED_VALUE;
 	m_context :string = "";
+	m_OffsetOnLine :number = -1;
 
-	constructor(word :string, char :string, type :CursorPositionType, context :string) {
+	constructor(word :string, char :string, type :CursorPositionType, context :string, offset :number) {
 		this.m_word = word;
 		this.m_char = char;
 		this.m_type = type;
 		this.m_context = context;
+		this.m_OffsetOnLine = offset;
 	}
 
 	isValid() :boolean {

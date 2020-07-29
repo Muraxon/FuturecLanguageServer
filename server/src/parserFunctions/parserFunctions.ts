@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover, MarkupContent } from 'vscode-languageserver';
+import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover, MarkupContent, WorkspaceFoldersRequest } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
 import { parserFunctions } from '../server';
 
@@ -24,12 +24,13 @@ export class ParserFunctions {
 
 	constructor() {}
 
-	async buildFunctions(uri :string) {
+	async buildFunctions(uri :string, root_path :string) {
 		let wholeFile = readFileSync(uriToFilePath(uri)!, "utf-8");
 
 		xml2js.parseString(wholeFile, (err, result) => {
 			if(result.root) {
 				let i = 0;
+
 				while (result.root.snippet[i]) {
 	
 					let docu = "";
@@ -48,16 +49,14 @@ export class ParserFunctions {
 					while(docu.search("\r") >= 0) {
 						docu = docu.replace("\r", "");
 					} 
-					// while(docu.search("\n") > 0) {
-					// 	docu = docu.replace("\n", "EOL");
-					// } 
 					while(docu.search("\t") >= 0) {
 						docu = docu.replace("\t", "");
-					} 
+					}
 
-					// while(docu.search("EOL") > 0) {
-					// 	docu = docu.replace("EOL", "\n\n");
-					// } 
+					while(docu.search(<string>"__BASE__") > 0) {
+						docu = docu.replace("__BASE__", root_path);
+					}
+
 
 					let docuMark :MarkupContent = {
 						kind: MarkupKind.Markdown,
