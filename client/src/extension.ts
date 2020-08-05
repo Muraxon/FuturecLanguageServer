@@ -19,7 +19,9 @@ import { workspace,
 	Range,
 	TextEditorEdit,
 	ProgressLocation,
-	Selection
+	Selection,
+	DocumentLink,
+	TextEdit
 } from 'vscode';
 
 import {
@@ -38,6 +40,15 @@ let x: SignatureHelp | null = null;
 let lastPos: Position | null = null;
 
 let resimportattributes = workspace.findFiles("**/*importattributes*");
+
+let docDecoration = window.createTextEditorDecorationType({
+	after: {
+		margin: "0 0 0 3em",
+		fontStyle: "italic",
+		fontWeight: "lighter",
+		color: "grey"
+	}
+})
 
 export function activate(context: ExtensionContext) {
 
@@ -98,7 +109,6 @@ export function activate(context: ExtensionContext) {
 							} else if(completion == "Signatur") {
 								element.insertText = element.label;
 							}
-							
 						}
 					});
 					return new CompletionList(items, false);

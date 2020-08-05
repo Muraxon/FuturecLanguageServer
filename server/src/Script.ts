@@ -26,8 +26,10 @@ export class Script {
 				console.log("looping")
 				return;
 			}
-			this.m_scripttext = this.m_scripttext.replace(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b"), element.m_scripttext);
-			this.m_includeScript.push(element.m_scriptnumber);
+			while(this.m_scripttext.search(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b")) >= 0) {
+				this.m_scripttext = this.m_scripttext.replace(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b"), element.m_scripttext);
+				this.m_includeScript.push(element.m_scriptnumber);
+			}
 		});
 	}
 

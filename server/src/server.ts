@@ -11,7 +11,6 @@ import {
 	InitializeParams,
 	DidChangeConfigurationNotification,
 	CompletionItem,
-	CompletionItemKind,
 	TextDocumentPositionParams,
 	Hover,
 	Location,
@@ -23,18 +22,9 @@ import {
 	Command,
 	CodeAction,
 	CodeActionKind,
-	WorkspaceEdit,
-	ExecuteCommandRequest,
 	CompletionParams,
-	CompletionTriggerKind,
 	CompletionList,
-	TextEdit,
-	DocumentLink,
-	TextDocumentChangeEvent,
-	DocumentHighlight,
-	SymbolInformation,
-	SymbolKind,
-	FoldingRange
+	TextDocumentChangeEvent
 } from 'vscode-languageserver';
 
 import { Analyzer } from './analyzer';
@@ -44,12 +34,10 @@ import { ParserFunctions } from './parserFunctions/parserFunctions';
 /* Callbacks */
 import { OnHover } from './Events/OnHover';
 import { OnReference } from './Events/OnReference';
-import { OnDefinition } from './Events/OnDefinition';
 import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 import { TextParser } from './TextParser';
-import { Script } from 'vm';
 
 
 export let parserFunctions :ParserFunctions = new ParserFunctions();
@@ -69,6 +57,8 @@ let paramsimpl:InitializeParams;
 export let GlobalAnalyzer = new Analyzer();
 let GlobalManager :DocumentManager = new DocumentManager();
 
+// Cache the settings of all open documents
+export let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 export let CurrentCompletionCharacter :string|undefined = undefined;
 
@@ -123,6 +113,7 @@ connection.onInitialized(() => {
 		});
 	}
 	
+	documentSettings.clear();
 	GlobalManager.clear();
 	connection.sendNotification("custom/getFilenames");
 	connection.sendNotification("custom/getParserXML");
@@ -132,6 +123,7 @@ connection.onInitialized(() => {
 interface ExampleSettings {
 	signaturhilfeBeiParserfunktionen: string;
 	CodeLens: Boolean;
+	AutocompletionMitZusaetzlichenTextedits: Boolean;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -139,13 +131,12 @@ interface ExampleSettings {
 // but could happen with other clients.
 const defaultSettings: ExampleSettings = { 
 	signaturhilfeBeiParserfunktionen: "Snippet",
-	CodeLens: true
+	CodeLens: true,
+	AutocompletionMitZusaetzlichenTextedits: true
 };
 
 let globalSettings: ExampleSettings = defaultSettings;
 
-// Cache the settings of all open documents
-let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 connection.onDidChangeConfiguration(change => {
 	GlobalManager.clear();
@@ -169,7 +160,7 @@ function getDocumentSettings(resource: string): Thenable<ExampleSettings> {
 		return Promise.resolve(globalSettings);
 	}
 
-	let result = documentSettings.get(resource);
+	let result : Thenable<ExampleSettings>|undefined = documentSettings.get(resource);
 	if (!result) {
 		result = connection.workspace.getConfiguration({
 			scopeUri: resource,
@@ -263,12 +254,11 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
 	let doc = documents.get(param2);
 	if(doc) {
-		/*let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
-		
+		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
 		connection.sendDiagnostics({
 			diagnostics: diag,
 			uri: param2
-		});*/
+		});
 	}
 });
 

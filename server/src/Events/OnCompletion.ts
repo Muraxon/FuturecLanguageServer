@@ -1,5 +1,5 @@
 import { TextDocument, CompletionItem, Position, CompletionItemKind, MarkupKind } from 'vscode-languageserver';
-import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter } from '../server';
+import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter, documentSettings } from '../server';
 import { TextParser } from "./../TextParser";
 import { Script } from '../Script';
 import { CursorPositionType, CursorPositionInformation } from '../CursorPositionInformation';
@@ -16,7 +16,7 @@ let elapsed_time = (note :string) :void => {
 	start = process.hrtime(); // reset the timer
 }
 
-export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :CompletionItem[] {
+export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :Promise<CompletionItem[]> {
 	let triggerChar = "";
 	let word :CursorPositionInformation|null = null;
 	if(CurrentCompletionCharacter) {
@@ -26,64 +26,72 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 	let scripttext :Script|null = null;
 
 	if(word) {
-	
-		if(word.m_context == "D" && triggerChar.length == 1) {
-			return parserFunctions.getDialogFunctions(pos);
-		} else if(word.m_context == "S" && triggerChar.length == 1) {
-			return parserFunctions.getDatabaseFunctions(pos);
-		} else if(word.m_context == "F" && triggerChar.length == 1) {
-			return parserFunctions.getFileFunctions(pos);
-		} else if(word.m_context == "H" && triggerChar.length == 1) {
-			return parserFunctions.getHelperFunctions(pos);
-		} else if(word.m_context == "P" && triggerChar.length == 1) {
-			return parserFunctions.getPrinterFunctions(pos);
-		} else if(word.m_context.length > 2 && triggerChar.length == 1){
-			if(word.m_context == "m_Rec" || word.m_context == "m_Rec2") {
-				return parserFunctions.getTableFunctions(pos);
-			}
+		let lineText = curDoc.getText({
+			start: {character: 0, line: pos.line},
+			end: {character: 100000, line: pos.line}
+		});
 
-			scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
-	
-			if(scripttext) {
-				let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s*(\\&|)\\s*" + word.m_context + "\\s*(\\=|\\;|\\,|\\))", "g");
-				let m = varPattern.exec(scripttext.m_scripttext);
-				
-				if(m) {
-					if(m[1] == "CString") {
-						return parserFunctions.getCStringFunctions(pos);
-					} else if(m[1] == "CTable") {
-						return parserFunctions.getTableFunctions(pos);
-					} else if(m[1] == "CMoney") {
-						return parserFunctions.getMoneyFunctions(pos);
-					} else if(m[1] == "CDateTime") {
-						return parserFunctions.getDateTimeFunctions(pos);
-					} 
+		let adjust = await documentSettings.get(curDoc.uri);
+		if(adjust) {
+
+			if(word.m_context == "D" && triggerChar.length == 1) {
+				return parserFunctions.getDialogFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+			} else if(word.m_context == "S" && triggerChar.length == 1) {
+				return parserFunctions.getDatabaseFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+			} else if(word.m_context == "F" && triggerChar.length == 1) {
+				return parserFunctions.getFileFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+			} else if(word.m_context == "H" && triggerChar.length == 1) {
+				return parserFunctions.getHelperFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+			} else if(word.m_context == "P" && triggerChar.length == 1) {
+				return parserFunctions.getPrinterFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+			} else if(word.m_context.length > 2 && triggerChar.length == 1){
+				if(word.m_context == "m_Rec" || word.m_context == "m_Rec2") {
+					return parserFunctions.getTableFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
 				}
-			}
-		} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
-			let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\((.*)\).*$/gm;
-			elapsed_time("start_completion_call");
-			scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
-			elapsed_time("end_completion_call");
-			if(scripttext) {
-				let completionFunction :CompletionItem[] = [];
-				let alreadyAdded :string[] = [];
-				let m :RegExpExecArray|null = null;
-				while(m = patternFunction.exec(scripttext.m_scripttext)) {
-					if(!alreadyAdded.includes(m[2])) {
-						alreadyAdded.push(m[2]);
-						completionFunction.push({
-							label: <string>m[2],
-							commitCharacters: ["("],
-							kind: CompletionItemKind.Function,
-							documentation: {
-								kind: MarkupKind.Markdown,
-								value: '`return ' + <string>m[1] + '`' + '\n\n' + m[3]
-							}
-						});
+	
+				scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+		
+				if(scripttext) {
+					let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s*(\\&|)\\s*" + word.m_context + "\\s*(\\=|\\;|\\,|\\))", "g");
+					let m = varPattern.exec(scripttext.m_scripttext);
+					
+					if(m) {
+						if(m[1] == "CString") {
+							return parserFunctions.getCStringFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+						} else if(m[1] == "CTable") {
+							return parserFunctions.getTableFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+						} else if(m[1] == "CMoney") {
+							return parserFunctions.getMoneyFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+						} else if(m[1] == "CDateTime") {
+							return parserFunctions.getDateTimeFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
+						} 
 					}
 				}
-				return completionFunction;
+			} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
+				let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\((.*)\).*$/gm;
+				elapsed_time("start_completion_call");
+				scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+				elapsed_time("end_completion_call");
+				if(scripttext) {
+					let completionFunction :CompletionItem[] = [];
+					let alreadyAdded :string[] = [];
+					let m :RegExpExecArray|null = null;
+					while(m = patternFunction.exec(scripttext.m_scripttext)) {
+						if(!alreadyAdded.includes(m[2])) {
+							alreadyAdded.push(m[2]);
+							completionFunction.push({
+								label: <string>m[2],
+								commitCharacters: ["("],
+								kind: CompletionItemKind.Function,
+								documentation: {
+									kind: MarkupKind.Markdown,
+									value: '`return ' + <string>m[1] + '`' + '\n\n' + m[3]
+								}
+							});
+						}
+					}
+					return completionFunction;
+				}
 			}
 		}
 	}
@@ -94,7 +102,7 @@ export function OnCompletion(docs :Map<string, TextDocument>, curDoc :TextDocume
 		}
 	}
 
-	scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, false, true);
+	scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 
 	if(scripttext) {
 	

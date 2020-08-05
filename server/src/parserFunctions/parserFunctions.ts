@@ -1,9 +1,18 @@
-import { readFileSync } from 'fs';
+import * as fs from 'fs';
 import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import * as xml2js from "xml2js";
-import { CompletionItem, CompletionItemKind, InsertTextFormat, Position, MarkupKind, SignatureInformation, ParameterInformation, Hover, MarkupContent, WorkspaceFoldersRequest } from 'vscode-languageserver';
-import { CursorPositionInformation, CursorPositionType } from './../CursorPositionInformation';
-import { parserFunctions } from '../server';
+import { 
+	CompletionItem, 
+	CompletionItemKind, 
+	InsertTextFormat,
+	Position, 
+	MarkupKind, 
+	SignatureInformation, 
+	ParameterInformation, 
+	MarkupContent, 
+	TextEdit
+} from 'vscode-languageserver';
+import { CursorPositionInformation, } from './../CursorPositionInformation';
 
 export class ParserFunctions {
 
@@ -18,136 +27,217 @@ export class ParserFunctions {
 	m_CompletionItemCDateTime :CompletionItem[] = [];
 	m_CompletionItemConstants :CompletionItem[] = [];
 
-	m_FunctionHoverStrings :Map<string,string> = new Map();
+	m_FunctionHoverStringsDialog :Map<string, string> = new Map();
+	m_FunctionHoverStringsDatabase :Map<string, string> = new Map();
+	m_FunctionHoverStringsPrinter :Map<string, string> = new Map();
+	m_FunctionHoverStringsFile :Map<string, string> = new Map();
+	m_FunctionHoverStringsHelper :Map<string, string> = new Map();
+	m_FunctionHoverStringsCString :Map<string, string> = new Map();
+	m_FunctionHoverStringsTable :Map<string, string> = new Map();
+	m_FunctionHoverStringsCMoney :Map<string, string> = new Map();
+	m_FunctionHoverStringsCDateTime :Map<string, string> = new Map();
+	m_FunctionHoverStringsConstants :Map<string, string> = new Map();
 
-	m_FunctionSignatureMap :Map<string,SignatureInformation> = new Map();
+	m_FunctionSignatureMapDialog :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapDatabase :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapPrinter :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapFile :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapHelper :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapCString :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapTable :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapCMoney :Map<string, SignatureInformation> = new Map();
+	m_FunctionSignatureMapCDateTime :Map<string, SignatureInformation> = new Map();
 
 	constructor() {}
 
 	async buildFunctions(uri :string, root_path :string) {
-		let wholeFile = readFileSync(uriToFilePath(uri)!, "utf-8");
 
-		xml2js.parseString(wholeFile, (err, result) => {
-			if(result.root) {
-				let i = 0;
+		try {
 
-				while (result.root.snippet[i]) {
-	
-					let docu = "";
-					if(result.root.snippet[i].notes) {
-						docu = <string>(result.root.snippet[i].notes[0]);
-					}
-					docu = docu.trim();
+			let wholeFile = fs.readFileSync(uriToFilePath(uri)!, "utf-8");
+		
+			xml2js.parseString(wholeFile, (err, result) => {
+				if(result.root) {
+					let i = 0;
+					let completeDocuDocument = "";
+		
+					while (result.root.snippet[i]) {
+						let keyword :string = <string>result.root.snippet[i].keyword[0];
+		
+						let docu = "";
+						if(result.root.snippet[i].notes) {
+							docu = <string>(result.root.snippet[i].notes[0]);
+						}
+						docu = docu.trim();
+		
+						let returnValue = "";
+						if(result.root.snippet[i].returnvalue) {
+							returnValue = <string>result.root.snippet[i].returnvalue[0];
+							docu = "`return " + this.getMappedReturnValue(returnValue) + "`" + "\n\n" + docu;
+						}
+						docu = docu.trim();
+		
+						while(docu.search("\r") >= 0) {
+							docu = docu.replace("\r", "");
+						} 
+						while(docu.search("\t") >= 0) {
+							docu = docu.replace("\t", "");
+						}
+		
+						while(docu.search(<string>"__BASE__") > 0) {
+							docu = docu.replace("__BASE__", root_path);
+						}
+		
+		
+						let docuMark :MarkupContent = {
+							kind: MarkupKind.Markdown,
+							value: docu
+						};
+		
+						let item :CompletionItem = {
+							label: keyword,
+							documentation: docuMark,
+							kind: CompletionItemKind.Method,
+							insertTextFormat: InsertTextFormat.Snippet,
+							insertText: <string>result.root.snippet[i].text[0],
+							data: this.getMappedReturnValue(returnValue)
+						}
 
-					let returnValue = "";
-					if(result.root.snippet[i].returnvalue) {
-						returnValue = <string>result.root.snippet[i].returnvalue[0];
-						docu = "`return " + this.getMappedReturnValue(returnValue) + "`" + "\n\n" + docu;
-					}
-					docu = docu.trim();
-
-					while(docu.search("\r") >= 0) {
-						docu = docu.replace("\r", "");
-					} 
-					while(docu.search("\t") >= 0) {
-						docu = docu.replace("\t", "");
-					}
-
-					while(docu.search(<string>"__BASE__") > 0) {
-						docu = docu.replace("__BASE__", root_path);
-					}
-
-
-					let docuMark :MarkupContent = {
-						kind: MarkupKind.Markdown,
-						value: docu
-					};
-
-					let item :CompletionItem = {
-						label: <string>result.root.snippet[i].keyword[0],
-						documentation: docuMark,
-						kind: CompletionItemKind.Method,
-						insertTextFormat: InsertTextFormat.Snippet,
-						insertText: <string>result.root.snippet[i].text[0]
-					}
-	
-					let signatureString = "";
-					if(result.root.snippet[i].signature) {
-						signatureString = <string>result.root.snippet[i].signature[0];
 
 						
-						signatureString = signatureString.trim();
-						if(signatureString.length > 0) {
-							let parameter = signatureString.split(",");
-							let ParameterInfo :ParameterInformation[] = [];
-							let ParameterStringComplete = "";
-							parameter.forEach(element => {
-								if(ParameterStringComplete.length > 0) { ParameterStringComplete += "\n"; }
-								ParameterStringComplete += element.trim();
-		
-								ParameterInfo.push({
-									label: element.trim(),
-									documentation: {
-										kind: MarkupKind.Markdown,
-										value: 'Current: **' + element.trim() + '**'
-									}
+						let signatureString = "";
+						let ParameterInfo :ParameterInformation[] = [];
+						let ParameterStringComplete = "";
+
+						let hoverFunctionString = "";
+
+						if(result.root.snippet[i].signature) {
+							signatureString = <string>result.root.snippet[i].signature[0];
+							signatureString = signatureString.trim();
+							if(signatureString.length > 0) {
+								let parameter = signatureString.split(",");
+								parameter.forEach(element => {
+									if(ParameterStringComplete.length > 0) { ParameterStringComplete += "\n"; }
+									ParameterStringComplete += element.trim();
+			
+									ParameterInfo.push({
+										label: element.trim(),
+										documentation: {
+											kind: MarkupKind.Markdown,
+											value: 'Current: **' + element.trim() + '**'
+										}
+									});
 								});
-							});
-							if(!this.m_FunctionSignatureMap.has(<string>result.root.snippet[i].keyword[0])) {
-								this.m_FunctionSignatureMap.set(<string>result.root.snippet[i].keyword[0], {
-									label: this.getMappedReturnValue(returnValue) + " " + <string>result.root.snippet[i].keyword[0],
-									documentation: {
-										kind: MarkupKind.Markdown,
-										value: ['```futurec', ParameterStringComplete.trim(), "```", "", docu].join("\n")
-									},
-									parameters: ParameterInfo
-								});
+
+								hoverFunctionString = ["```futurec", signatureString, "```", "", docu].join("\n");
+							} else {
+								hoverFunctionString = ["```futurec", "void", "```", "", docu].join("\n");
 							}
-						} 
-					}
-
-					if(!this.m_FunctionHoverStrings.has(signatureString)) {
-						if(signatureString.length <= 0) {
-							signatureString = "(void)";
 						}
-						this.m_FunctionHoverStrings.set(item.label.trim(),  ["```futurec", signatureString.trim(), "```", "", docu].join("\n"));
-					}
-	
-					if(result.root.snippet[i].context != undefined) {
-						if(result.root.snippet[i].context[0] == "D") {
-							this.m_CompletionItemDialog.push(item);
-						} else if(result.root.snippet[i].context[0] == "H") {
-							this.m_CompletionItemHelper.push(item);
-						} else if(result.root.snippet[i].context[0] == "F") {
-							this.m_CompletionItemFile.push(item);
-						} else if(result.root.snippet[i].context[0] == "S") {
-							this.m_CompletionItemDatabase.push(item);
-						} else if(result.root.snippet[i].context[0] == "CTable") {
-							this.m_CompletionItemTable.push(item);
-						} else if(result.root.snippet[i].context[0] == "CMoney") {
-							this.m_CompletionItemCMoney.push(item);
-						} else if(result.root.snippet[i].context[0] == "CString") {
-							this.m_CompletionItemCString.push(item);
-						} else if(result.root.snippet[i].context[0] == "CDateTime") {
-							this.m_CompletionItemCDateTime.push(item);
-						} else if(result.root.snippet[i].context[0] == "P") {
-							this.m_CompletionItemPrinter.push(item);
+
+						// if(docu.length > 0) {
+						// 	let context = "";
+						// 	if(result.root.snippet[i].context) {
+						// 		context = <string>(result.root.snippet[i].context[0]) +".";
+						// 		signatureString = "(" + signatureString + ")";
+						// 	} else {
+						// 		signatureString = "";
+						// 	}
+						// 	let keyword = "";
+						// 	if(result.root.snippet[i].keyword) {
+						// 		keyword = <string>(result.root.snippet[i].keyword[0]);
+						// 	}
+						// 	completeDocuDocument = completeDocuDocument + "# " + context+keyword + signatureString.trim()+ "  \n" + docu + "  \n  \n  \n  \n  \n";
+						// }
+
+						let sigInfo :SignatureInformation = {
+							label: this.getMappedReturnValue(returnValue) + " " + keyword,
+							documentation: {
+								kind: MarkupKind.Markdown,
+								value: ['```futurec', ParameterStringComplete.trim(), "```", "", docu].join("\n")
+							},
+							parameters: ParameterInfo
+						}
+		
+						
+						if(result.root.snippet[i].context != undefined) {
+							if(result.root.snippet[i].context[0] == "D") {
+								this.m_CompletionItemDialog.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapDialog.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsDialog.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "H") {
+								this.m_CompletionItemHelper.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapHelper.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsHelper.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "F") {
+								this.m_CompletionItemFile.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapFile.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsFile.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "S") {
+								this.m_CompletionItemDatabase.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapDatabase.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsDatabase.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "CTable") {
+								this.m_CompletionItemTable.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapTable.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsTable.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "CMoney") {
+								this.m_CompletionItemCMoney.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapCMoney.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsCMoney.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "CString") {
+								this.m_CompletionItemCString.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapCString.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsCString.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "CDateTime") {
+								this.m_CompletionItemCDateTime.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapCDateTime.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsCDateTime.set(keyword, hoverFunctionString);
+							} else if(result.root.snippet[i].context[0] == "P") {
+								this.m_CompletionItemPrinter.push(item);
+								if(signatureString.length > 0) {
+									this.m_FunctionSignatureMapPrinter.set(keyword, sigInfo);
+								}
+								this.m_FunctionHoverStringsPrinter.set(keyword, hoverFunctionString);
+							} else {
+								item.kind = CompletionItemKind.Variable;
+								this.m_CompletionItemConstants.push(item);
+							}
 						} else {
-							item.kind = CompletionItemKind.Variable;
+							item.kind = CompletionItemKind.Snippet;
 							this.m_CompletionItemConstants.push(item);
+							this.m_FunctionHoverStringsConstants.set(keyword, hoverFunctionString);
 						}
-					} else {
-						item.kind = CompletionItemKind.Snippet;
-						this.m_CompletionItemConstants.push(item);
-					}
-	
-					i++;
-				}
 
-			}
-			
-			
-		});
+		
+						i++;
+					}
+
+					// completeDocuDocument = completeDocuDocument.trim();
+					// fs.writeFile("Test.md", completeDocuDocument, (test) => {
+					// 	console.log(test);
+					// })
+				}
+			});
+		} catch(e) {
+			console.log(e);
+		}
 	}
 
 	getMappedReturnValue(val :string) :string{
@@ -171,108 +261,142 @@ export class ParserFunctions {
 		return "undefined (" + val + ")";
 	}
 
-	getHover(key :string) :string | undefined {
-		return this.m_FunctionHoverStrings.get(key);
-	}
-
-	getSignature(word :CursorPositionInformation) :SignatureInformation | undefined {
-		if(this.m_FunctionSignatureMap.has(word.m_word)) {
-			return this.m_FunctionSignatureMap.get(word.m_word);
+	getHover(posInfo :CursorPositionInformation) :string | undefined {
+		switch(posInfo.m_context) {
+			case "P":
+				return this.m_FunctionHoverStringsPrinter.get(posInfo.m_word);
+			case "D":
+				return this.m_FunctionHoverStringsDialog.get(posInfo.m_word);
+			case "F":
+				return this.m_FunctionHoverStringsFile.get(posInfo.m_word);
+			case "S":
+				return this.m_FunctionHoverStringsDatabase.get(posInfo.m_word);
+			case "H":
+				return this.m_FunctionHoverStringsHelper.get(posInfo.m_word);
+			case "CTable":
+				return this.m_FunctionHoverStringsTable.get(posInfo.m_word);
+			case "CString":
+				return this.m_FunctionHoverStringsCString.get(posInfo.m_word);
+			case "CDateTime":
+				return this.m_FunctionHoverStringsCDateTime.get(posInfo.m_word);
+			case "CMoney":
+				return this.m_FunctionHoverStringsCMoney.get(posInfo.m_word);
+			default:
+				return this.m_FunctionHoverStringsConstants.get(posInfo.m_word);
 		}
-		return undefined;
 	}
 
-	adjustCompletionItem(items :CompletionItem[], pos :Position) {
-		// items.forEach(element => {
-		// 	element.textEdit = TextEdit.insert(pos, <string>element.documentation);
-		// 	element.insertTextFormat = InsertTextFormat.Snippet;
-		// });
-		// 
+	getSignature(posInfo :CursorPositionInformation) :SignatureInformation | undefined {
+		switch(posInfo.m_context) {
+			case "P":
+				return this.m_FunctionSignatureMapPrinter.get(posInfo.m_word);
+			case "D":
+				return this.m_FunctionSignatureMapDialog.get(posInfo.m_word);
+			case "F":
+				return this.m_FunctionSignatureMapFile.get(posInfo.m_word);
+			case "S":
+				return this.m_FunctionSignatureMapDatabase.get(posInfo.m_word);
+			case "H":
+				return this.m_FunctionSignatureMapHelper.get(posInfo.m_word);
+			case "m_Rec":
+			case "m_Rec2":
+			case "CTable":
+				return this.m_FunctionSignatureMapTable.get(posInfo.m_word);
+			case "CString":
+				return this.m_FunctionSignatureMapCString.get(posInfo.m_word);
+			case "CDateTime":
+				return this.m_FunctionSignatureMapCDateTime.get(posInfo.m_word);
+			case "CMoney":
+				return this.m_FunctionSignatureMapCMoney.get(posInfo.m_word);
+			default:
+				return undefined;
+		}
 	}
 
-	getDialogFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemDialog, pos);
+	adjustCompletionItem(items :CompletionItem[], pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		items.forEach(element => {
+			if(element.data) {
+				let m = lineText.search(/^.*(foreachrowreverse|foreachrow|while|if|.*=.*).*$/gm);
+				if(m < 0 && adjust) {
+					if(element.data == "CString" || element.data == "CMoney" || element.data == "CDateTime" || element.data == "CTable" || element.data == "double" || element.data == "int" || element.data == "BOOL") {
+						let edit = TextEdit.insert(Position.create(pos.line, pos.character - posInfo.m_word.length - 1 - posInfo.m_context.length), element.data + " " + this.getPrefixFromReturnType(element.data) +  element.label + " = ");
+						element.additionalTextEdits = [edit];
+					} else {
+						element.additionalTextEdits = [];
+					}
+				} else {
+					element.additionalTextEdits = [];
+				}
+			}
+		});
+	}
+
+	getPrefixFromReturnType(returnType :string) :string {
+		if(returnType == "CString") {
+			return "str";
+		} else if(returnType == "int") {
+			return "n";
+		} else if(returnType == "CTable") {
+			return "t";
+		} else if(returnType == "CMoney") {
+			return "m";
+		} else if(returnType == "CDateTime") {
+			return "dt";
+		} else if(returnType == "double") {
+			return "d";
+		} else if(returnType == "BOOL") {
+			return "b";
+		} else {
+			return "FAILED_RETURN_TYPE";
+		}
+	}
+
+	getDialogFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemDialog, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemDialog;
 	}
 	
-	getDatabaseFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemDatabase, pos);
+	getDatabaseFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemDatabase, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemDatabase;
 	}
 
-	getFileFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemFile, pos);
+	getFileFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemFile, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemFile;
 	}
 
-	getHelperFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemHelper, pos);
+	getHelperFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemHelper, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemHelper;
 	}
 
-	getCStringFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemCString, pos);
+	getCStringFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemCString, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemCString;
 	}
 
-	getTableFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemTable, pos);
+	getTableFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemTable, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemTable;
 	}
 
-	getMoneyFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemCMoney, pos);
+	getMoneyFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemCMoney, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemCMoney;
 	}
 
-	getDateTimeFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemCDateTime, pos);
+	getDateTimeFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemCDateTime, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemCDateTime;
 	}
 
-	getPrinterFunctions(pos :Position) {
-		this.adjustCompletionItem(this.m_CompletionItemPrinter, pos);
+	getPrinterFunctions(pos :Position, posInfo :CursorPositionInformation, lineText :string, adjust :Boolean) {
+		this.adjustCompletionItem(this.m_CompletionItemPrinter, pos, posInfo, lineText, adjust);
 		return this.m_CompletionItemPrinter;
 	}
 
 	getConstantVariables() {
 		return this.m_CompletionItemConstants;
-	}
-
-	static m_keyword = /\b(int|BOOL|CString|double|CTable|CMoney|CDateTime|FALSE|TRUE|AND|OR|STRING_LINEBREAK|m_Rec|m_TabNr|m_JobNr|D|F|P|S|H|if|while|return|funcreturn|includescript)\b/;
-	isKeyWord(word :string) :boolean {
-		ParserFunctions.m_keyword.lastIndex = 0;
-		let m = ParserFunctions.m_keyword.exec(word);
-		if(m) {
-			console.log("keyword " + word);
-			return true;
-		}
-		return false;
-	}
-
-	isParserFunction(word :string) :boolean {
-		if(this.m_FunctionHoverStrings.has(word)) {
-			console.log("parserfunction " + word);
-			return true;
-		}
-		return false;
-	}
-
-	static m_literal = /\b[0-9]+\b/g;
-	isLiteral(word :string) :boolean {
-		ParserFunctions.m_literal.lastIndex = 0;
-		let m = ParserFunctions.m_literal.exec(word);
-		if(m) {
-			console.log("literal " + word);
-			return true;
-		}
-		return false;
-	}
-
-	isVariable(word :string) :boolean {
-		if(this.isKeyWord(word) || this.isParserFunction(word) || this.isLiteral(word)) {
-			return false;
-		}
-		return true;
 	}
 }

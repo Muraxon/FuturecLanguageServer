@@ -1,6 +1,6 @@
 {
     "name": "future-c",
-    "description": "Future C - Languageserver für hausinterne Skriptsprache",
+    "description": "Future C - experimental Languageserver",
     "author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
     "license": "MIT",
     "version": "1.1.4",
@@ -41,6 +41,12 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Wenn aktiviert wird im aktuellen Editor CodeLens aktiviert - diese zeigen ober dem SCRIPT:-Teil eine Optionen für das Hinzufügen / Entfernen des Skripts aus dem Design an"
+                },
+                "future_c.AutocompletionMitZusaetzlichenTextedits": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Wenn aktiviert wird im Editor auch die Variable autocompleted"
                 }
             }
         },

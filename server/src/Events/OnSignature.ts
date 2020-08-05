@@ -146,6 +146,15 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 					}
 				});
 			} else {
+				let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+				if(script) {
+					let contextTypeReg = new RegExp("\\b(CTable|CString|CMoney|CDateTime)\\b\\s*(&|)\\s*\\b"+word.m_context+"\\b")
+					let m = contextTypeReg.exec(script.m_scripttext);
+					if(m) {
+						word.m_context = <string>m[1];
+					}
+				}
+
 				let signature = parserFunctions.getSignature(word);
 				if(signature) {
 					signatureInformation.push(signature);
