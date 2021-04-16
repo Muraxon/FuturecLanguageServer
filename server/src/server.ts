@@ -39,7 +39,6 @@ import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 import { TextParser } from './TextParser';
 
-
 export let parserFunctions :ParserFunctions = new ParserFunctions();
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
@@ -251,13 +250,13 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 	};
 });
 
-connection.onNotification("custom/GetDiagnostic", (param :Position, param2 :string) => {
-	let doc = documents.get(param2);
+connection.onNotification("custom/GetDiagnostic", (obj) => {
+	let doc = documents.get(obj.uri);
 	if(doc) {
-		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, param, OnDiagnostic);
+		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnostic);
 		connection.sendDiagnostics({
 			diagnostics: diag,
-			uri: param2
+			uri: obj.uri
 		});
 	}
 });
@@ -354,6 +353,7 @@ connection.onSignatureHelp((params, token): SignatureHelp => {
 	let fnc :SignatureInformation[] = [];
 	if(doc) {
 		let signatureHelp = <SignatureHelp>GlobalManager.doWithDocuments(documents, doc, params.position, OnSignature);
+		console.log(signatureHelp);
 		return signatureHelp;
 
 	}
@@ -400,6 +400,7 @@ connection.onCompletion((param: CompletionParams, token): CompletionItem[] | Com
 	if(doc) {
 		
 		completionitems = GlobalManager.doWithDocuments(documents, doc, param.position, OnCompletion);
+		console.log(completionitems);
 		return completionitems;
 	}
 	return completionitems;

@@ -134,13 +134,18 @@ export function activate(context: ExtensionContext) {
 					let i = 0;
 					let isInsideString = false;
 					let activeParam = 0;
+					let nBracePairs = 0;
 					while(i < lineBeforeCursor.length) {
 						let char = lineBeforeCursor.charAt(i++);
 						if(char == "\"") {
 							isInsideString = !isInsideString;
+						} else if(char == "(" && !isInsideString){
+							nBracePairs++;
+						} 
+						else if(char == ")" && !isInsideString) {
+							nBracePairs--;
 						}
-
-						if(char == "," && !isInsideString) {
+						else if(char == "," && !isInsideString) {
 							activeParam++;
 						}
 					}
@@ -149,7 +154,7 @@ export function activate(context: ExtensionContext) {
 					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
 					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
 					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
-					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (activeParam >= x.signatures[0].parameters.length)) {
+					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (nBracePairs == 0) || (activeParam >= x.signatures[0].parameters.length)) {
 						x = null;
 						return;
 					}
@@ -186,7 +191,7 @@ export function activate(context: ExtensionContext) {
 
 		client.onNotification("custom/getParserXML", async () => {
 			let filename = "";
-			let res2 = await workspace.findFiles("scriptautocompletedefs.xml");
+			let res2 = await workspace.findFiles(".futurec/scriptautocompletedefs.json");
 			res2.forEach((value) => {
 				filename = value.toString();
 			});
@@ -230,7 +235,7 @@ export function activate(context: ExtensionContext) {
 		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
 		let uri = window.activeTextEditor.document.uri;
 
-		client.sendNotification("custom/GetDiagnostic", [pos, uri.toString()]);
+		client.sendNotification("custom/GetDiagnostic", {pos: pos, uri: uri.toString()});
 	}));
 
 	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {

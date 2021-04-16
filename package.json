@@ -4,7 +4,7 @@
     "author": "Marcel Sotiropoulos <marcel.sotiropoulos@soti-it.at>",
     "license": "MIT",
     "version": "1.1.4",
-    "publisher": "marcel-sotiropoulos",
+    "publisher": "MarcelSotiropoulos",
     "categories": [],
     "keywords": [
         "multi-root ready"
@@ -32,7 +32,10 @@
                         "Snippet",
                         "Signatur"
                     ],
-                    "enumDescriptions": ["Fügt Parserfunktionen als Snippet ein - alle vormarkiert - und werden mit Tab ersetzt", "Wie bei anderen Programmiersprachen zeigt diese Option die Parameter als Liste an, ohne sie vorher einzufügen"],
+                    "enumDescriptions": [
+                        "Fügt Parserfunktionen als Snippet ein - alle vormarkiert - und werden mit Tab ersetzt",
+                        "Wie bei anderen Programmiersprachen zeigt diese Option die Parameter als Liste an, ohne sie vorher einzufügen"
+                    ],
                     "default": "Snippet",
                     "description": "Wenn auf Snippet gestellt wird, dann werden die Parserfunktionen mit einem Snippet erstellt. Wenn auf Signatur gestellt, dann wird eine Signaturhilfe gegeben sobald man den Befehl eingibt"
                 },
@@ -50,21 +53,30 @@
                 }
             }
         },
-        "languages": [{
-            "id": "futurec",
-            "extensions": [".cpp"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "futurec",
-            "scopeName": "source.ffscript",
-            "path": "./syntaxes/ffscript.tmLanguage.json"
-        }],
-        "snippets": [{
-            "language": "futurec",
-            "path": "./snippets/snippets.json"
-        }],
-        "keybindings": [{
+        "languages": [
+            {
+                "id": "futurec",
+                "extensions": [
+                    ".cpp"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "futurec",
+                "scopeName": "source.ffscript",
+                "path": "./syntaxes/ffscript.tmLanguage.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "futurec",
+                "path": "./snippets/snippets.json"
+            }
+        ],
+        "keybindings": [
+            {
                 "name": "Neuen Skripterklärung",
                 "command": "editor.action.insertSnippet",
                 "when": "editorTextFocus",
@@ -73,7 +85,8 @@
                     "langId": "futurec",
                     "name": "New Scriptexplanation"
                 }
-            }, {
+            },
+            {
                 "name": "Neuen param",
                 "command": "editor.action.insertSnippet",
                 "when": "editorTextFocus",
@@ -92,7 +105,8 @@
                     "langId": "futurec",
                     "name": "New Function"
                 }
-            }, {
+            },
+            {
                 "name": "Changekommentar erstellen",
                 "command": "editor.action.insertSnippet",
                 "when": "editorTextFocus",
@@ -101,33 +115,41 @@
                     "langId": "futurec",
                     "name": "New Changecomment"
                 }
-            }, {
+            },
+            {
                 "command": "jump.to.start.of.script",
                 "key": "Ctrl+j s",
                 "when": "editorTextFocus"
-            }, {
+            },
+            {
                 "command": "create.hook",
                 "key": "Ctrl+numpad3",
                 "when": "editorTextFocus"
-            }, {
+            },
+            {
                 "command": "create.script",
                 "when": "editorTextFocus",
                 "key": "Ctrl+numpad1"
             }
         ],
-        "commands": [{
-            "command": "Check.Skript.Syntax",
-            "title": "Check Skript Syntax"
-        }, {
-            "command": "jump.to.start.of.script",
-            "title": "Jump to start of script"
-        }, {
-            "command": "create.hook",
-            "title": "Hook erstellen"
-        }, {
-            "command": "create.script",
-            "title": "Skript erstellen"
-        }]
+        "commands": [
+            {
+                "command": "Check.Skript.Syntax",
+                "title": "Check Skript Syntax"
+            },
+            {
+                "command": "jump.to.start.of.script",
+                "title": "Jump to start of script"
+            },
+            {
+                "command": "create.hook",
+                "title": "Hook erstellen"
+            },
+            {
+                "command": "create.script",
+                "title": "Skript erstellen"
+            }
+        ]
     },
     "scripts": {
         "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
