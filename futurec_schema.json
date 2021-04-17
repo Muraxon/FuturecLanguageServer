@@ -1,0 +1,130 @@
+{
+	"title": "JSON schema for scriptautocompletedefs.json file",
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"additionalProperties": false,
+	"definitions": {
+		"CompleteContext": {
+			"type": "object",
+			"required": ["text", "context", "signature", "returnvalue", "notes"],
+			"properties": {
+				"text": {
+					"type": "string",
+					"description": "Text der eingefügt wird, wenn Autocompletion triggert."
+				},
+				"context": {
+					"type": "string",
+					"description": "In welchen Context die Funktion aufgerufen werden kann.",
+					"enum": ["D", "H", "P", "F", "S", "CDateTime", "CMoney", "CTable", "CString"]
+				},
+				"version": {
+					"type": "string",
+					"description": "Die Version, komplett nutzlos. Aber hey, so wie dieses Schema, dass ich gerade schreibe. Das wird sowieso keiner lesen, weil jeden egal ist."
+				},
+				"signature": {
+					"type": "string",
+					"description": "Die Signatur der Funktion."
+				},
+				"returnvalue": {
+					"type": "string",
+					"description": "Der Rückgabewert der Funktion.",
+					"enum": ["TYPE_SHORT", "TYPE_DOUBLE", "TYPE_CSTRING", "TYPE_CTABLE", "TYPE_BYTE", "TYPE_INT", "TYPE_DATETIME", "TYPE_MONEY", "TYPE_BOOL", "void"]
+				},
+				"notes": {
+					"type": "array",
+					"items": {
+						"type": "string"
+					},
+					"description": "Ein Array aus Strings für die Notes.",
+					"default": [""]
+				}
+			}
+		}
+	},
+	"properties": {
+		"$schema": {
+			"type": "string"
+		},
+		"CString": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "CString object that defines all functions you can call with a CString variable"
+		},
+		"CTable": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "CTable object that defines all functions you can call with a CTable variable"
+		},
+		"CMoney": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "CMoney object that defines all functions you can call with a CMoney variable"
+		},
+		"CDateTime": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "CDateTime object that defines all functions you can call with a CDateTime variable"
+		},
+		"H": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "H object that defines all functions you can call with a H variable"
+		},
+		"F": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "F object that defines all functions you can call with a F variable"
+		},
+		"P": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "P object that defines all functions you can call with a P variable"
+		},
+		"S": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "S object that defines all functions you can call with a S variable"
+		},
+		"D": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "D object that defines all functions you can call with a D variable"
+		}
+	}
+}

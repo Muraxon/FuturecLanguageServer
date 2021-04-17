@@ -204,7 +204,7 @@ export function activate(context: ExtensionContext) {
 		})
 
 		client.onNotification("custom/getCursorPos", async () => {
-			client.sendNotification("custom/sendCursorPos", [[window.activeTextEditor.document.uri.toString(), window.activeTextEditor.selection.active]]);
+			client.sendNotification("custom/sendCursorPos", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
 		})
 	});
 
@@ -246,6 +246,7 @@ export function activate(context: ExtensionContext) {
 				let range = new Range(position, position);
 				
 				window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
+				//commands.executeCommand("editor.action.insertSnippet", {langId: 'futurec', name: 'log'})
 			} catch (error) {
 				
 			}

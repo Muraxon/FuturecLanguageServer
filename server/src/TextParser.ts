@@ -30,7 +30,6 @@ export class TextParser {
 		let charAtPos = char;
 		let isfunction = false;
 		let isParserfunction = false;
-		let isVarFunction = false;
 		let context = "";
 
 	
@@ -57,7 +56,6 @@ export class TextParser {
 					if(char == "\n" || char == "\t" || char == " ") {
 
 					} else {
-						isVarFunction = true;
 						while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
 						(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
 						(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
@@ -70,7 +68,6 @@ export class TextParser {
 						context = text.substring(offset, offsetTemp);
 					}
 				} else {
-					isVarFunction = true;
 					while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
 					(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
 					(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 

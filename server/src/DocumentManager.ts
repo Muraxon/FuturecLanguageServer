@@ -4,6 +4,7 @@ import { readFileSync } from 'fs';
 
 export class DocumentManager {
 
+	// These are all documents that are not managed from the `documents` variable in server.ts
 	private m_Documents :Map<string, TextDocument> = new Map();
 	private m_AddedManagedDocuments :boolean = false;
 
