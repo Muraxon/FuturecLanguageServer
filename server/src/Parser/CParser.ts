@@ -142,6 +142,13 @@ export class CParser {
 		return false;
 	}
 
+	IsVariable(text :string) {
+		if(this.isControlChar(text) || this.isKeyword(text) || this.isVariableDeclaration(text)) {
+			return false;
+		}
+		return true;
+	}
+
 	processTokens(script :Script) {
 		let diag :Diagnostic[] = [];
 
@@ -150,6 +157,8 @@ export class CParser {
 
 		let definedVariables :Map<string, Variable>[] = [];
 		definedVariables.push(new Map());
+
+		let definedFunctions :string[] = [];
 
 		let bIsInsideString = false;
 		let scopeLevel = 0;
@@ -165,15 +174,61 @@ export class CParser {
 				
 				if(bIsInsideString) { continue; }
 				
-				if(currentTokenText == "FUNCTION") {
+				if(currentTokenText == "ENDFUNCTION") {
+					if(this.m_Tokens[i + 1].m_Text != ";") {
+						this.addError("; extected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					}
+				}
+				else if(currentTokenText == "FUNCTION") {
 					if(this.m_Tokens[i + 1].m_Text != ":") {
-						this.addError(": erwartet", diag, doc, scriptPos, this.m_Tokens[i]);
+						this.addError(": erwartet `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
 					} else {
-						if(this.m_Tokens[i + 2].m_Text != "CMoney") {
-							//this.addError("CMoney sollte hier stehen", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+						if(!this.isVariableDeclaration(this.m_Tokens[i + 2].m_Text)) {
+							this.addError("a type was extected `"+this.m_Tokens[i + 2].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 2]);
+						} else {
+							let functionText = this.m_Tokens[i + 3].m_Text;
+							if(!definedFunctions.indexOf(functionText)) {
+								this.addError("function `"+functionText+"` already defined", diag, doc, scriptPos, this.m_Tokens[i + 3]);
+							}
+							definedFunctions.push(functionText);
+							
+							if(this.m_Tokens[i + 4].m_Text != "(") {
+								this.addError("`(` expected", diag, doc, scriptPos, this.m_Tokens[i + 4]);
+							} else {
+								let j = i + 5;
+								let success = false;
+								while(true) {
+									if(!this.isVariableDeclaration(this.m_Tokens[j].m_Text)) {
+										this.addError("type expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
+										break;
+									}
+									j++;
+
+
+									if(this.m_Tokens[j].m_Text != "&" && !this.IsVariable(this.m_Tokens[j].m_Text)) {
+										this.addError("variablename or reference expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
+										break;
+									}
+									j++;
+
+									if(this.m_Tokens[j].m_Text == ")") {
+										j++;
+										success = true;
+										break;
+									} else if(this.m_Tokens[j].m_Text != ",") {
+										this.addError("`,` or `)` expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
+										break;
+									}
+									j++;
+								}
+
+								if(success && this.m_Tokens[j].m_Text != ";") {
+									this.addError("; expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
+								}
+								i = j;
+							}
 						}
 					}
-					i += 2;
 				} else if(currentTokenText == "S") {
 					if(this.m_Tokens[i + 1].m_Text != "." || this.m_Tokens[i + 2].m_Text != "Select") {
 						//this.addError("Select erwartet", diag, doc, scriptPos, this.m_Tokens[i + 2]);
@@ -211,9 +266,15 @@ export class CParser {
 				}
 				else if(this.isKeyword(currentTokenText)) {
 					if(this.m_Tokens[i + 1].m_Text != "(") {
-						this.addError("( exptected", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+						this.addError("( exptected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
 					}
-				} else {
+				} 
+				else if(currentTokenText == "funcreturn") {
+					if(!this.IsVariable(this.m_Tokens[i + 1].m_Text)) {
+						this.addError("variable exptected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					}
+				}
+				else {
 
 					let variable = definedVariables[scopeLevel].get(currentTokenText)
 					if(!variable && !this.isControlChar(currentTokenText)) {
