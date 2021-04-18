@@ -28,6 +28,13 @@ class Variable {
 
 export class CParser {
 	m_Tokens :Token[];
+	getToken(pos :number) {
+		if(this.m_Tokens[pos]) {
+			return this.m_Tokens[pos];
+		}
+		throw this.m_Tokens[pos - 1];
+	}
+
 	constructor() {
 		this.m_Tokens = [];
 	}
@@ -166,7 +173,8 @@ export class CParser {
 		try {
 			
 			for(let i = 0; i < this.m_Tokens.length; i++) {
-				let currentTokenText = this.m_Tokens[i].m_Text;
+				let currentToken = this.getToken(i);
+				let currentTokenText = currentToken.m_Text;
 				if(currentTokenText == "\"") {
 					bIsInsideString = !bIsInsideString;
 					continue;
@@ -175,16 +183,19 @@ export class CParser {
 				if(bIsInsideString) { continue; }
 				
 				if(currentTokenText == "ENDFUNCTION") {
-					if(this.m_Tokens[i + 1].m_Text != ";") {
-						this.addError("; extected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					let secondToken = this.getToken(i + 1);
+					if(secondToken.m_Text != ";") {
+						this.addError("; extected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
 					}
 				}
 				else if(currentTokenText == "FUNCTION") {
-					if(this.m_Tokens[i + 1].m_Text != ":") {
-						this.addError(": erwartet `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					let secondToken = this.getToken(i + 1);
+					let thirdToken = this.getToken(i + 2);
+					if(secondToken.m_Text != ":") {
+						this.addError(": erwartet `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
 					} else {
-						if(!this.isVariableDeclaration(this.m_Tokens[i + 2].m_Text)) {
-							this.addError("a type was extected `"+this.m_Tokens[i + 2].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 2]);
+						if(!this.isVariableDeclaration(thirdToken.m_Text)) {
+							this.addError("a type was extected `"+thirdToken.m_Text+"`", diag, doc, scriptPos, thirdToken);
 						} else {
 							let functionText = this.m_Tokens[i + 3].m_Text;
 							if(!definedFunctions.indexOf(functionText)) {
@@ -203,14 +214,14 @@ export class CParser {
 										break;
 									}
 									j++;
-
-
+									
+									
 									if(this.m_Tokens[j].m_Text != "&" && !this.IsVariable(this.m_Tokens[j].m_Text)) {
 										this.addError("variablename or reference expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
 										break;
 									}
 									j++;
-
+									
 									if(this.m_Tokens[j].m_Text == ")") {
 										j++;
 										success = true;
@@ -221,7 +232,7 @@ export class CParser {
 									}
 									j++;
 								}
-
+								
 								if(success && this.m_Tokens[j].m_Text != ";") {
 									this.addError("; expected `"+this.m_Tokens[j].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[j]);
 								}
@@ -230,13 +241,16 @@ export class CParser {
 						}
 					}
 				} else if(currentTokenText == "S") {
-					if(this.m_Tokens[i + 1].m_Text != "." || this.m_Tokens[i + 2].m_Text != "Select") {
-						//this.addError("Select erwartet", diag, doc, scriptPos, this.m_Tokens[i + 2]);
+					let secondToken = this.getToken(i + 1);
+					let thirdToken = this.getToken(i + 2);
+					if(secondToken.m_Text != ".") {
+						this.addError("`.` erwartet", diag, doc, scriptPos, secondToken);
 					}
 					i += 2;
 				} else if(currentTokenText == "}" || currentTokenText == "ENDSCRIPT") {
-					if(this.m_Tokens[i + 1].m_Text != ";") {
-						this.addError("; erwartet", diag, doc, scriptPos, this.m_Tokens[i]);
+					let secondToken = this.getToken(i + 1);
+					if(secondToken.m_Text != ";") {
+						this.addError("; erwartet", diag, doc, scriptPos, currentToken);
 					}
 					definedVariables.pop();
 					scopeLevel--;
@@ -244,48 +258,57 @@ export class CParser {
 					definedVariables.push(new Map());
 					scopeLevel++;
 				} else if(this.isVariableDeclaration(currentTokenText)) {
-					let nextIdent = this.m_Tokens[i + 1].m_Text;
+					let secondToken = this.getToken(i + 1);
+					
+					let nextIdent = secondToken.m_Text;
 					if(this.isKeyword(nextIdent) || this.isVariableDeclaration(nextIdent) || this.isControlChar(nextIdent)) {
-						this.addError("no keyword, variable declaration or control character exptected `"+ nextIdent +"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+						this.addError("no keyword, variable declaration or control character exptected `"+ nextIdent +"`", diag, doc, scriptPos, secondToken);
 						i += 1;
 					} else {
-						if(this.m_Tokens[i + 2].m_Text == ";" || this.m_Tokens[i + 2].m_Text == "=") {
+						let thirdToken = this.getToken(i + 2);
+						if(thirdToken.m_Text == ";" || thirdToken.m_Text == "=") {
 							console.log(nextIdent);
 							if(definedVariables[scopeLevel - 1] && definedVariables[scopeLevel - 1].get(nextIdent)) {
-								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, this.m_Tokens[i + 1]);
+								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken);
 							}
 							else if(definedVariables[scopeLevel].get(nextIdent)) {
-								this.addError("redifining variable `" + nextIdent + "`" , diag, doc, scriptPos, this.m_Tokens[i + 1]);
+								this.addError("redifining variable `" + nextIdent + "`" , diag, doc, scriptPos, secondToken);
 							}
 							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText));
+							
+							// completly new expression-tree must be analysed
+
 						} else {
-							//this.addError("; erwartet", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+							this.addError("`;` or `=` expected", diag, doc, scriptPos, secondToken);
 						}
 						i += 2;
 					}
 				}
 				else if(this.isKeyword(currentTokenText)) {
-					if(this.m_Tokens[i + 1].m_Text != "(") {
-						this.addError("( exptected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					let secondToken = this.getToken(i + 1);
+					if(secondToken.m_Text != "(") {
+						this.addError("( exptected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
 					}
 				} 
 				else if(currentTokenText == "funcreturn") {
-					if(!this.IsVariable(this.m_Tokens[i + 1].m_Text)) {
-						this.addError("variable exptected `"+this.m_Tokens[i + 1].m_Text+"`", diag, doc, scriptPos, this.m_Tokens[i + 1]);
+					let secondToken = this.getToken(i + 1);
+					if(!this.IsVariable(secondToken.m_Text)) {
+						this.addError("variable exptected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
 					}
 				}
 				else {
-
+					
 					let variable = definedVariables[scopeLevel].get(currentTokenText)
 					if(!variable && !this.isControlChar(currentTokenText)) {
-						this.addError("Variable nicht definiert", diag, doc, scriptPos, this.m_Tokens[i]);
+						this.addError("Variable nicht definiert", diag, doc, scriptPos, currentToken);
 					} else {
 						if(variable) {
 							if(scopeLevel < variable.m_Scope) {
-								this.addError("Variable nicht definiert - out of scope", diag, doc, scriptPos, this.m_Tokens[i]);
+								this.addError("Variable nicht definiert - out of scope", diag, doc, scriptPos, currentToken);
 							}
-							if(this.m_Tokens[i + 1].m_Text != ";") {
-								//this.addError("; erwartet", diag, doc, scriptPos, this.m_Tokens[i]);
+							let secondToken = this.getToken(i + 1);
+							if(secondToken.m_Text != ";") {
+								//this.addError("; erwartet", diag, doc, scriptPos, currentToken);
 							}
 						}
 					}
@@ -295,8 +318,9 @@ export class CParser {
 	
 	
 			}
-		} catch (error) {
-			console.log(error);			
+		} catch (token) {
+			console.log("error: ", token);
+			this.addError(token.m_Text, diag, doc, scriptPos, token);	
 		}
 		return diag;
 	}
