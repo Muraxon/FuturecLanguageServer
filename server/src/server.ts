@@ -123,6 +123,7 @@ interface ExampleSettings {
 	signaturhilfeBeiParserfunktionen: string;
 	CodeLens: Boolean;
 	AutocompletionMitZusaetzlichenTextedits: Boolean;
+	ShowDiagnosisOfCurrentScript: Boolean;
 }
 
 // The global settings, used when the `workspace/configuration` request is not supported by the client.
@@ -131,7 +132,8 @@ interface ExampleSettings {
 const defaultSettings: ExampleSettings = { 
 	signaturhilfeBeiParserfunktionen: "Snippet",
 	CodeLens: true,
-	AutocompletionMitZusaetzlichenTextedits: true
+	AutocompletionMitZusaetzlichenTextedits: true,
+	ShowDiagnosisOfCurrentScript: true
 };
 
 let globalSettings: ExampleSettings = defaultSettings;
@@ -250,14 +252,20 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 	};
 });
 
-connection.onNotification("custom/GetDiagnostic", (obj) => {
-	let doc = documents.get(obj.uri);
-	if(doc) {
-		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnostic);
-		connection.sendDiagnostics({
-			diagnostics: diag,
-			uri: obj.uri
-		});
+connection.onNotification("custom/GetDiagnostic", async (obj) => {
+	let settings = await documentSettings.get(obj.uri);
+
+	if(settings && settings.ShowDiagnosisOfCurrentScript) {
+		let doc = documents.get(obj.uri);
+		if(doc) {
+			let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnostic);
+			connection.sendDiagnostics({
+				diagnostics: diag,
+				uri: obj.uri
+			});
+		}
+	} else {
+		connection.sendDiagnostics({uri: obj.uri, diagnostics: []})
 	}
 });
 
@@ -308,7 +316,11 @@ connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPosit
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 	// In this simple example we get the settings for every validate run.
 	let settings = await getDocumentSettings(textDocument.uri);
-	connection.sendNotification("custom/getCursorPos");
+	if(settings && settings.ShowDiagnosisOfCurrentScript) {
+		connection.sendNotification("custom/getCursorPos");
+	} else {
+		connection.sendDiagnostics({uri: textDocument.uri, diagnostics: []})
+	}
 }
 
 connection.onDidChangeWatchedFiles(_change => {
@@ -352,7 +364,6 @@ connection.onSignatureHelp((params, token): SignatureHelp => {
 	let fnc :SignatureInformation[] = [];
 	if(doc) {
 		let signatureHelp = <SignatureHelp>GlobalManager.doWithDocuments(documents, doc, params.position, OnSignature);
-		console.log(signatureHelp);
 		return signatureHelp;
 
 	}
@@ -399,7 +410,6 @@ connection.onCompletion((param: CompletionParams, token): CompletionItem[] | Com
 	if(doc) {
 		
 		completionitems = GlobalManager.doWithDocuments(documents, doc, param.position, OnCompletion);
-		console.log(completionitems);
 		return completionitems;
 	}
 	return completionitems;

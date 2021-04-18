@@ -50,6 +50,12 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Wenn aktiviert wird im Editor auch die Variable autocompleted"
+                },
+                "future_c.ShowDiagnosisOfCurrentScript": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Wenn aktiviert werdem im Editor alle Warnings/Errors/Hints/Infos angezeigt"
                 }
             }
         },
