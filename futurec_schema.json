@@ -125,6 +125,15 @@
 			},
 			"type": "object",
 			"description": "D object that defines all functions you can call with a D variable"
+		},
+		"Global": {
+			"patternProperties": {
+				".*": {
+					"allOf": [{"$ref": "#/definitions/CompleteContext"}]
+				}
+			},
+			"type": "object",
+			"description": "Global object that defines all constants you can access"
 		}
 	}
 }

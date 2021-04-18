@@ -49,7 +49,7 @@ export class ParserFunctions {
 
 	constructor() {}
 
-	addEntries(jsonObject :any, root_path :string, functionSignature :Map<string, SignatureInformation>, functionHoverString :Map<string, string>, completionItems :CompletionItem[]) {
+	addEntries(jsonObject :any, root_path :string, functionSignature :Map<string, SignatureInformation>|null, functionHoverString :Map<string, string>, completionItems :CompletionItem[]) {
 		for(let functionName in jsonObject) {
 			let sigInfo :SignatureInformation;
 			let hoverString :string = "";
@@ -122,7 +122,9 @@ export class ParserFunctions {
 				parameters: paramInfo
 			}
 
-			functionSignature.set(functionName, sigInfo);
+			if(functionSignature) {
+				functionSignature.set(functionName, sigInfo);
+			}
 			completionItems.push(completionItem);
 			functionHoverString.set(functionName, hoverString);
 		}
@@ -163,6 +165,9 @@ export class ParserFunctions {
 			}
 			if(result.S) {
 				this.addEntries(result.S, root_path, this.m_FunctionSignatureMapDatabase, this.m_FunctionHoverStringsDatabase, this.m_CompletionItemDatabase);
+			}
+			if(result.Global) {
+				this.addEntries(result.Global, root_path, null, this.m_FunctionHoverStringsConstants, this.m_CompletionItemConstants);
 			}
 
 		} catch(e) {
