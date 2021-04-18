@@ -51,9 +51,9 @@ Erste Version eines Language-Server für unsere Skriptsprache. Der Sinn dahinter
   - [ ] Variablen - branch sensitive completion
   ___
 - [ ] Diagnostics
-  - [ ] Skriptweit
+  - [X] Skriptweit (nur simpel)
   - [ ] Global
-  - [ ] Check-Script Syntax in Language-Server integrieren
+  - [X] Check-Script Syntax in Language-Server integrieren (nur simpel)
   ___
 - [x] Snippets
   - [x] **Snippets Zum Erstellen von Functions / Scripts / Changekommentare**
