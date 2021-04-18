@@ -181,6 +181,9 @@ export class CParser {
 		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int"));
 		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "int"));
 		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "int"));
+		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int"));
+		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "int"));
+		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int"));
 
 		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString"));
 		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString"));
@@ -210,6 +213,10 @@ export class CParser {
 		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "CString"));
 		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "CString"));
 		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "CString"));
+		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "CString"));
+		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "CString"));
+		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString"));
+		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString"));
 	}
 
 	processTokens(script :Script) {
