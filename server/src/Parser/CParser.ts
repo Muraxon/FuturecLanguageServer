@@ -32,7 +32,10 @@ export class CParser {
 		if(this.m_Tokens[pos]) {
 			return this.m_Tokens[pos];
 		}
-		throw this.m_Tokens[pos - 1];
+		while(pos >= 0 && !this.m_Tokens[pos]) {
+			pos--;
+		}
+		throw this.m_Tokens[pos];
 	}
 
 	constructor() {
@@ -158,7 +161,7 @@ export class CParser {
 	}
 
 	IsVariable(text :string) {
-		if(this.isControlChar(text) || this.isKeyword(text) || this.IsType(text)) {
+		if(this.isControlChar(text) || this.isKeyword(text) || this.IsType(text) || this.isPredefinedContext(text)) {
 			return false;
 		}
 		if(text.charAt(0).match(/[0-9]/)) {
@@ -198,6 +201,9 @@ export class CParser {
 		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "CString"));
 		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "CString"));
 		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "CString"));
+		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "CString"));
+		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "CString"));
+		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "CString"));
 
 		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "CString"));
 		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "CString"));
@@ -209,6 +215,9 @@ export class CParser {
 	processTokens(script :Script) {
 		let diag :Diagnostic[] = [];
 
+		let found = script.m_scripttext.search(/#includescript\s+[0-9]+\b/);
+		let hasIncludescript = found >= 0;
+
 		let doc = TextDocument.create("", "", 0, script.m_scripttext);
 		let scriptPos = script.m_Position;
 
@@ -217,13 +226,14 @@ export class CParser {
 		this.AddStandardVariables(globalScope);
 		definedVariables.push(globalScope);
 
-		let variablesToAddToStackAfterScopeIncrement :string[] = [];
-		
+		let variablesToAddToStackAfterScopeIncrement :Map<number, string[]> = new Map();
 
 		let definedFunctions :string[] = [];
 
 		let bIsInsideString = false;
 		let scopeLevel = 0;
+		let savedScopeLevel :number[] = [];
+		let addNextTimeSameScope :boolean[] = [];
 
 		try {
 			
@@ -343,25 +353,44 @@ export class CParser {
 						this.addError("`.` expected", diag, doc, scriptPos, secondToken);
 					} else {
 						let thirdToken = this.getToken(i + 2);
-						let fourtThoken = this.getToken(i + 3);
-						if(fourtThoken.m_Text != "(") {
-							this.addError("`(` expected", diag, doc, scriptPos, fourtThoken);
-						}
-
-						let isNegated = this.getToken(i - 1).m_Text == "!";
-						
-						i += 3;
-						if(thirdToken.m_Text == "IsVariableDefined") {
-							let fifthToken = this.getToken(i + 1);
-							if(!isNegated) {
+						if(!this.IsVariable(thirdToken.m_Text)) {
+							this.addError("Parserfunction expected `"+thirdToken.m_Text+"`", diag, doc, scriptPos, thirdToken);
+							i += 1;
+						} else {
+							let fourtThoken = this.getToken(i + 3);
+							if(fourtThoken.m_Text != "(") {
+								this.addError("`(` expected", diag, doc, scriptPos, fourtThoken);
+								i += 2;
+								continue;
+							}
+	
+							let isNegated = false;
+							if(i >= 1) {
+								isNegated = this.getToken(i - 1).m_Text == "!";
+							}
+							
+							i += 3;
+							if(thirdToken.m_Text == "IsVariableDefined") {
+								let fifthToken = this.getToken(i + 1);
 								if(this.IsVariable(fifthToken.m_Text)) {
-									variablesToAddToStackAfterScopeIncrement.push(fifthToken.m_Text);
+									let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel);
+									if(map) {
+										map.push(fifthToken.m_Text);
+									} else {
+										variablesToAddToStackAfterScopeIncrement.set(scopeLevel, [fifthToken.m_Text]);
+									}
 								} else {
 									this.addError("`"+fifthToken.m_Text+"` must be a variable", diag, doc, scriptPos, fourtThoken);
 								}
+	
+								if(isNegated) {
+									savedScopeLevel.push(scopeLevel);
+									addNextTimeSameScope.push(true);
+								}
+								i+=1;
 							}
-							i+=1;
 						}
+
 					}
 				} else if(currentTokenText == "}") {
 					let secondToken = this.getToken(i + 1);
@@ -376,11 +405,37 @@ export class CParser {
 					scopeLevel++;
 
 					let newScope = new Map();
-					variablesToAddToStackAfterScopeIncrement.forEach((val :string) => {
-						newScope.set(val, new Variable(val, scopeLevel, "int"));
-					});
 
-					variablesToAddToStackAfterScopeIncrement = [];
+					if(addNextTimeSameScope.length > 0 && savedScopeLevel.length > 0) {
+						let addNextTimeTmp = addNextTimeSameScope[addNextTimeSameScope.length - 1];
+						let savedScopeLevelTmp = savedScopeLevel[savedScopeLevel.length - 1];
+						if(savedScopeLevelTmp >= 0 && savedScopeLevelTmp == scopeLevel - 1) {
+							if(addNextTimeTmp) {
+								addNextTimeSameScope[addNextTimeSameScope.length - 1] = false;
+							}
+						} 
+						if (!addNextTimeTmp) {
+							let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel - 1);
+							if(map) {
+								map.forEach((val :string) => {
+									newScope.set(val, new Variable(val, scopeLevel, "int"));
+								});
+								variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
+							}
+							addNextTimeSameScope.pop();
+							savedScopeLevel.pop();
+						}
+					} else {
+						let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel - 1);
+						if(map) {
+							map.forEach((val :string) => {
+								newScope.set(val, new Variable(val, scopeLevel, "int"));
+							});
+							variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
+						}
+						addNextTimeSameScope.pop();
+						savedScopeLevel.pop();
+					}
 					
 					definedVariables.push(newScope);
 				} else if(this.IsType(currentTokenText)) {
@@ -433,7 +488,12 @@ export class CParser {
 								if(fourthToken.m_Text == ";") {
 									let fifthToken = this.getToken(i + 4);
 									if(this.IsVariable(fifthToken.m_Text)) {
-										variablesToAddToStackAfterScopeIncrement.push(fifthToken.m_Text);
+										let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel);
+										if(map) {
+											map.push(fifthToken.m_Text);
+										} else {
+											variablesToAddToStackAfterScopeIncrement.set(scopeLevel, [fifthToken.m_Text]);
+										}
 										let sixthToken = this.getToken(i + 5);
 										if(sixthToken.m_Text != ")") {
 											if(sixthToken.m_Text != ";") {
@@ -502,7 +562,13 @@ export class CParser {
 						}
 	
 						if(!variable) {
-							this.addError("`"+currentTokenText+"` possibly not defined, maybe it is defined in an includescript, or this script gets included somewhere. This is not yet supported", diag, doc, scriptPos, currentToken, DiagnosticSeverity.Warning);
+							let errorText = "`"+currentTokenText+"` possibly not defined, maybe";
+							let severity :DiagnosticSeverity = DiagnosticSeverity.Error;
+							if(hasIncludescript) {
+								severity = DiagnosticSeverity.Warning;
+								errorText += " it is defined in an includescript, or";
+							}
+							this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, currentToken, severity);
 							//i += 2;
 						}
 
@@ -522,17 +588,25 @@ export class CParser {
 								}
 							}
 							i += 3;
+						} else {
+							if(!this.isControlChar(secondToken.m_Text)) {
+								this.addError("Expression after variable expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
+							} else {
+								i += 1;
+							}
 						}
 					}
 				}
-	
-	
-	
-	
 			}
+			if(this.m_Tokens[this.m_Tokens.length - 1].m_Text != ";") {
+				this.addError("`;` expected at the end of the script", diag, doc, scriptPos, this.m_Tokens[this.m_Tokens.length - 1]);	
+			}
+
 		} catch (token) {
 			console.log("error: ", token);
-			this.addError(token.m_Text, diag, doc, scriptPos, token);	
+			if(token.m_Text != ";") {
+				this.addError("`;` expected at the end of the script", diag, doc, scriptPos, token);	
+			}
 		}
 		return diag;
 	}
