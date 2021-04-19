@@ -73,16 +73,13 @@ export class CParser {
 				}
 				if((pos + 1 < text.length) && (text.charAt(pos + 1) == "*")) {
 					pos++;
-					let cont = false;
 					while(pos < text.length) {
-						if(cont) { break; }
 						if(text.charAt(pos) == "*") {
 							if(pos + 1 < text.length && text.charAt(pos + 1) == "/") {
 								pos++;
 								pos++;
 								startOfIdentifier = -1;
-								cont = true;
-								continue;
+								break;
 							}
 						}
 						pos++;
@@ -147,7 +144,7 @@ export class CParser {
 	}
 
 	isControlChar(text :string) {
-		if(text.match(/[;{}()=<>,!+-/*]/)) {
+		if(text.match(/[;{}()=<>,!+-/*%§$]/)) {
 			return true;
 		}
 		return false;
@@ -194,6 +191,10 @@ export class CParser {
 		vars.set("STRING_PARENTHESISOPEN", new Variable("STRING_PARENTHESISOPEN", 0, "CString"));
 		vars.set("STRING_PARENTHESISCLOSE", new Variable("STRING_PARENTHESISCLOSE", 0, "CString"));
 		vars.set("STRING_LINEFEED", new Variable("STRING_LINEFEED", 0, "CString"));
+		vars.set("STRING_BRACKETOPEN", new Variable("STRING_BRACKETOPEN", 0, "CString"));
+		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString"));
+		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString"));
+		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString"));
 
 		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "CString"));
 		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "CString"));
@@ -257,11 +258,13 @@ export class CParser {
 				if(currentTokenText == "ENDFUNCTION") {
 					let secondToken = this.getToken(i + 1);
 					if(secondToken.m_Text != ";") {
-						this.addError("; expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
+						this.addError("After ENDFUNCTION must follow an `;`", diag, doc, scriptPos, secondToken);
 					}
 
-					definedVariables.pop();
-					scopeLevel--;
+					if(scopeLevel - 1 >= 0) {
+						definedVariables.pop();
+						scopeLevel--;
+					}
 				}
 				else if(currentTokenText == "FUNCTION") {
 					definedVariables.push(new Map());
@@ -269,7 +272,7 @@ export class CParser {
 
 					let secondToken = this.getToken(i + 1);
 					if(secondToken.m_Text != ":") {
-						this.addError(": expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken);
+						this.addError("After FUNCTION must follow an `:`", diag, doc, scriptPos, secondToken);
 					} else {
 						let thirdToken = this.getToken(i + 2);
 						if(!this.IsType(thirdToken.m_Text)) {
@@ -406,8 +409,10 @@ export class CParser {
 							this.addError("`;` expected after `}`", diag, doc, scriptPos, currentToken);
 						}
 					}
-					definedVariables.pop();
-					scopeLevel--;
+					if(scopeLevel - 1 >= 0) {
+						definedVariables.pop();
+						scopeLevel--;
+					}
 				}else if(currentTokenText == "{") {
 					scopeLevel++;
 
@@ -445,7 +450,104 @@ export class CParser {
 					}
 					
 					definedVariables.push(newScope);
-				} else if(this.IsType(currentTokenText)) {
+					
+				} 
+				else if(currentTokenText == "§") {
+					let secondToken = this.getToken(i + 1);
+					if(secondToken.m_Text != "START_JSON") {
+						this.addError("After `§` must follow an `START_JSON`", diag, doc, scriptPos, secondToken);
+					} else {
+						let thirdToken = this.getToken(i + 2);
+						if(thirdToken.m_Text != "§") {
+							this.addError("After `START_JSON` must follow an `§`", diag, doc, scriptPos, secondToken);
+						} else {
+							i += 3;
+							let json :string = "";
+							do {
+								let nextJsonToken = this.getToken(i);
+								if(nextJsonToken.m_Text == "§") {
+									i++;
+									let tokenAfterParagraph = this.getToken(i);
+									if(tokenAfterParagraph.m_Text == "END_JSON") {
+										i++;
+										let tokenAfterEndToken = this.getToken(i);
+										if(tokenAfterEndToken.m_Text != "§") {
+											this.addError("After `END_JSON` must follow an `§`", diag, doc, scriptPos, tokenAfterParagraph);
+										}
+										break;
+									} else {
+										json += nextJsonToken.m_Text;
+
+										if(tokenAfterParagraph.m_Text == "$") {
+											let tempToken = this.getToken(i + 1);
+											if(this.IsVariable(tempToken.m_Text)) {
+												let j = 0;
+												let variable :Variable|undefined = undefined;
+												while(variable == undefined && j <= scopeLevel) {
+													variable = definedVariables[j].get(tempToken.m_Text);
+													j++;
+												}
+												if(!variable) {
+													let errorText = "`"+tempToken.m_Text+"` possibly not defined, maybe";
+													let severity :DiagnosticSeverity = DiagnosticSeverity.Error;
+													if(hasIncludescript) {
+														severity = DiagnosticSeverity.Warning;
+														errorText += " it is defined in an includescript, or";
+													}
+													this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, tempToken, severity);
+												}
+											}
+										} else {
+											this.addError("After `§` must follow an `$`", diag, doc, scriptPos, tokenAfterParagraph);
+										}
+										
+										json += tokenAfterParagraph.m_Text;
+									}
+								} else {
+									json += nextJsonToken.m_Text;
+									if(nextJsonToken.m_Text == "$") {
+										let tempToken = this.getToken(i + 1);
+										json += tempToken.m_Text;
+										if(tempToken.m_Text != "§") {
+											this.addError("After `$` must follow an `§`", diag, doc, scriptPos, tempToken);
+										}
+										i++;
+									}
+								}
+
+								i++;
+							} while (i < this.m_Tokens.length);
+							
+							
+							while(json.indexOf("\"§$") >= 0) {
+								json = json.replace("\"§$", "cTESTUNGSOc");
+							}
+							while(json.indexOf("$§\"") >= 0) {
+								json = json.replace("$§\"", "bSOUNGTESTUNGb");
+							}
+							while(json.indexOf("§$") >= 0) {
+								json = json.replace("§$", "cTESTUNGSOc");
+							}
+							while(json.indexOf("$§") >= 0) {
+								json = json.replace("$§", "bSOUNGTESTUNGb");
+							}
+							
+							while(json.indexOf("cTESTUNGSOc") >= 0) {
+								json = json.replace("cTESTUNGSOc", "\"§$");
+							}
+							while(json.indexOf("bSOUNGTESTUNGb") >= 0) {
+								json = json.replace("bSOUNGTESTUNGb", "$§\"");
+							}
+							try {
+								console.log(json);
+								JSON.parse(json);
+							} catch (error) {
+								this.addError(error.message + "\n\n" + error.stack, diag, doc, scriptPos, secondToken);
+							}
+						}
+					}
+				}
+				else if(this.IsType(currentTokenText)) {
 					let secondToken = this.getToken(i + 1);
 					
 					let nextIdent = secondToken.m_Text;
@@ -456,11 +558,11 @@ export class CParser {
 						let thirdToken = this.getToken(i + 2);
 						if(thirdToken.m_Text == ";" || thirdToken.m_Text == "=") {
 							
-							let i = 0;
+							let j = 0;
 							let variable :Variable|undefined = undefined;
-							while(variable == undefined && i < scopeLevel) {
-								variable = definedVariables[i].get(nextIdent);
-								i++;
+							while(variable == undefined && j < scopeLevel) {
+								variable = definedVariables[j].get(nextIdent);
+								j++;
 							}
 
 							if(variable) {
