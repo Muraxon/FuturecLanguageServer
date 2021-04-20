@@ -207,23 +207,23 @@ export class Analyzer {
 		return null;
 	}
 
-	getCompleteCurrentScript(CursorPos :Position, doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>, includescript :boolean = true, toPos :boolean = false) :Script|null {
+	getCompleteCurrentScript(CursorPos :Position, doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>, includescript :boolean = true, toPos :boolean = false, replaceIncludeScriptText :boolean = true) :Script|null {
 		let editedScript = this.getEditedScript(CursorPos, doc, toPos);
 		if(editedScript && includescript) {
-			this.getIncludeScriptForCurrentScript(editedScript, _NotManagedDocs);
+			this.getIncludeScriptForCurrentScript(editedScript, _NotManagedDocs, replaceIncludeScriptText);
 		}
 
 		return editedScript;
 	}
 
-	getIncludeScriptForCurrentScript(script :Script, _NotManagedDocs :Map<string, TextDocument>) {
+	getIncludeScriptForCurrentScript(script :Script, _NotManagedDocs :Map<string, TextDocument>, replaceIncludeScriptText :boolean) {
 		let scriptNumbers = this.getincludeScriptsNumbers(script.m_scripttext);
 		let scriptNumbersOld :number[]= [];
 		let loop = false;
 		while(scriptNumbers && !loop) {
 			let includeScripts = this.getScripts(scriptNumbers, _NotManagedDocs);
 			if(includeScripts) {
-				script.addScripts(...includeScripts);
+				script.addScripts(replaceIncludeScriptText, ...includeScripts);
 			} else { break; }
 
 			scriptNumbersOld.push(...scriptNumbers);
