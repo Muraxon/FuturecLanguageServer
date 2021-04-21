@@ -191,7 +191,7 @@ export class Analyzer {
 						if(m2) {
 							if(!alreadFoundScript.includes(element)) {
 								let posScript = elementTextDocu.positionAt(m.index);
-								scriptsText.push(new Script(text.substr(m.index, m2.index - m.index), element, posScript, elementTextDocu.uri));
+								scriptsText.push(new Script(text.substr(m.index, m2.index - m.index), element, posScript, elementTextDocu.uri, "SCRIPT"));
 							} else {
 								alreadFoundScript.push(element);
 							}
@@ -278,7 +278,7 @@ export class Analyzer {
 			}
 
 			if(end > 0) {
-				editedScript = new Script(completeDocText.substring(finalStart.index, end), parseInt(finalStart[2]), doc.positionAt(finalStart.index), doc.uri);
+				editedScript = new Script(completeDocText.substring(finalStart.index, end), parseInt(finalStart[2]), doc.positionAt(finalStart.index), doc.uri, finalStart[1]);
 			}
 		}
 

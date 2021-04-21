@@ -1,6 +1,8 @@
 import { Diagnostic, DiagnosticSeverity, Position, TextDocument } from 'vscode-languageserver';
+import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { Script } from '../Script';
-import { GlobalAnalyzer } from '../server';
+import { GlobalAnalyzer, parserFunctions } from '../server';
+
 
 interface TokenRange {
 	start :number;
@@ -27,6 +29,12 @@ class Variable {
 	}
 }
 
+interface ScriptInformation {
+	m_definedVariables :Map<string , Variable>[];
+	m_definedFunctions :string[][];
+	m_diagnostics :Diagnostic[];
+}
+
 export class CParser {
 	getToken(token :Token[], pos :number) {
 		if(token[pos]) {
@@ -42,12 +50,13 @@ export class CParser {
 		
 	}
 
-	ParseText(_NotManagedDocs :Map<string, TextDocument>, script :Script, isIncludescript :boolean, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null) {
+	ParseText(_NotManagedDocs :Map<string, TextDocument>, script :Script, isIncludescript :boolean, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null) :ScriptInformation {
 		if(isIncludescript) {
 			GlobalAnalyzer.getIncludeScriptForCurrentScript(script, _NotManagedDocs, false);
 		}
 		let text = script.m_scripttext;
 		let pos = text.indexOf("\n");
+		if(pos < 0) { pos = text.length; }
 
 		let tokens :Token[] = [];
 
@@ -77,6 +86,7 @@ export class CParser {
 					continue;
 				}
 				if((pos + 1 < text.length) && (text.charAt(pos + 1) == "*")) {
+					pos++;
 					pos++;
 					while(pos < text.length) {
 						if(text.charAt(pos) == "*") {
@@ -184,10 +194,10 @@ export class CParser {
 		vars.set("m_Rec2", new Variable("m_Rec2", 0, "CTable"));
 		vars.set("m_RecNr", new Variable("m_RecNr", 0, "int"));
 		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int"));
-		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "int"));
-		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "int"));
+		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "CString"));
+		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "CString"));
 		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int"));
-		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "int"));
+		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL"));
 		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int"));
 
 		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString"));
@@ -226,9 +236,10 @@ export class CParser {
 		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "CString"));
 		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString"));
 		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString"));
+		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "CString"));
 	}
 
-	processTokens(_NotManagedDocs :Map<string, TextDocument>, tokens :Token[], script :Script, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null, isIncludescript :boolean = false) {
+	processTokens(_NotManagedDocs :Map<string, TextDocument>, tokens :Token[], script :Script, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null, isIncludescript :boolean = false) :ScriptInformation {
 		let diag :Diagnostic[] = [];
 
 		let found = script.m_scripttext.search(/#includescript\s+[0-9]+\b/);
@@ -393,7 +404,7 @@ export class CParser {
 							x++;
 						}
 						if(index < 0) {
-							this.addError("No Function with name `"+thirdToken.m_Text+"` found. Maybe this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, thirdToken, isIncludescript, DiagnosticSeverity.Warning);
+							this.addError("No Function with name `"+thirdToken.m_Text+"` found. Maybe this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, thirdToken, isIncludescript, DiagnosticSeverity.Information);
 						}
 					} else {
 						this.addError(": expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken, isIncludescript);
@@ -436,11 +447,23 @@ export class CParser {
 									this.addError("`"+fifthToken.m_Text+"` must be a variable", diag, doc, scriptPos, fourtThoken,isIncludescript);
 								}
 	
-								if(isNegated) {
-									savedScopeLevel.push(scopeLevel);
-									addNextTimeSameScope.push(true);
-								}
+								// if(isNegated) {
+								// 	if(savedScopeLevel[savedScopeLevel.length - 1] != scopeLevel) {
+								// 		savedScopeLevel.push(scopeLevel);
+								// 	}
+
+								// 	if(!addNextTimeSameScope[addNextTimeSameScope.length - 1]) {
+								// 		addNextTimeSameScope.push(true);
+								// 	}
+								// }
 								i+=1;
+							} else {
+								if(parserFunctions) {
+									let func = parserFunctions.getSignature(new CursorPositionInformation(thirdToken.m_Text, thirdToken.m_Text.charAt(0), CursorPositionType.PARSER_FUNCTION, currentTokenText, 0))
+									if(!func) {
+										this.addError("Function `"+thirdToken.m_Text+"` is not a parserfunction from the global namespace `"+currentTokenText+"`", diag, doc, scriptPos, thirdToken, isIncludescript);
+									}
+								}
 							}
 						}
 
@@ -474,7 +497,22 @@ export class CParser {
 							let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel - 1);
 							if(map) {
 								map.forEach((val :string) => {
-									newScope.set(val, new Variable(val, scopeLevel, "int"));
+									let type = "int";
+									if(val.substring(0, 3) == "str") {
+										type = "CString";
+									} else if(val.substring(0, 2) == "dt") {
+										type = "CDateTime";
+									} else if(val.substring(0, 1) == "b") {
+										type = "BOOL";
+									} else if(val.substring(0, 1) == "t") {
+										type = "CTable";
+									} else if(val.substring(0, 1) == "m") {
+										type = "CMoney";
+									} else if(val.substring(0, 1) == "d") {
+										type = "double";
+									} 
+
+									newScope.set(val, new Variable(val, scopeLevel, type));
 								});
 								variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 							}
@@ -485,7 +523,22 @@ export class CParser {
 						let map = variablesToAddToStackAfterScopeIncrement.get(scopeLevel - 1);
 						if(map) {
 							map.forEach((val :string) => {
-								newScope.set(val, new Variable(val, scopeLevel, "int"));
+								let type = "int";
+								if(val.substring(0, 3) == "str") {
+									type = "CString";
+								} else if(val.substring(0, 2) == "dt") {
+									type = "CDateTime";
+								} else if(val.substring(0, 1) == "b") {
+									type = "BOOL";
+								} else if(val.substring(0, 1) == "t") {
+									type = "CTable";
+								} else if(val.substring(0, 1) == "m") {
+									type = "CMoney";
+								} else if(val.substring(0, 1) == "d") {
+									type = "double";
+								} 
+
+								newScope.set(val, new Variable(val, scopeLevel, type));
 							});
 							variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 						}
@@ -533,9 +586,9 @@ export class CParser {
 												}
 												if(!variable) {
 													let errorText = "`"+tempToken.m_Text+"` possibly not defined, maybe";
-													let severity :DiagnosticSeverity = DiagnosticSeverity.Error;
+													let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
 													if(hasIncludescript) {
-														severity = DiagnosticSeverity.Warning;
+														severity = DiagnosticSeverity.Information;
 														errorText += " it is defined in an includescript, or";
 													}
 													this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, tempToken, isIncludescript, severity);
@@ -609,10 +662,10 @@ export class CParser {
 							}
 
 							if(variable) {
-								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Error);
+								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
 							}
 							else if(definedVariables[scopeLevel].get(nextIdent)) {
-								this.addError("Redefining variable `" + nextIdent + "`" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Error);
+								this.addError("Redefining variable `" + nextIdent + "`" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
 							}
 							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText));
 							
@@ -723,9 +776,9 @@ export class CParser {
 	
 						if(!variable) {
 							let errorText = "`"+currentTokenText+"` possibly not defined, maybe";
-							let severity :DiagnosticSeverity = DiagnosticSeverity.Error;
+							let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
 							if(hasIncludescript) {
-								severity = DiagnosticSeverity.Warning;
+								severity = DiagnosticSeverity.Information;
 								errorText += " it is defined in an includescript, or";
 							}
 							this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, currentToken, isIncludescript, severity);
@@ -742,6 +795,13 @@ export class CParser {
 							if(!this.IsVariable(thirdToken.m_Text)) {
 								this.addError("after . must follow an Parserfunction", diag, doc, scriptPos, thirdToken, isIncludescript);
 							} else {
+								if(variable && parserFunctions) {
+									let func = parserFunctions.getSignature(new CursorPositionInformation(thirdToken.m_Text, "", CursorPositionType.VARIABLE, variable.m_Type, 0))
+									if(!func) {
+										this.addError("Function `"+thirdToken.m_Text+"` is not a parserfunction from instance `"+variable.m_Name+"` of type `"+variable.m_Type+"`", diag, doc, scriptPos, thirdToken, isIncludescript);
+									}
+								}
+
 								let fourthToken = this.getToken(tokens,i + 3);
 								if(fourthToken.m_Text != "(") {
 									this.addError("after Parserfunction must follow an Paranthesis", diag, doc, scriptPos, fourthToken, isIncludescript);
@@ -767,7 +827,10 @@ export class CParser {
 				this.addError("`;` expected at the end of the script", diag, doc, scriptPos, token, isIncludescript);	
 			}
 		}
-		return diag;
+		return { m_diagnostics: diag,
+			m_definedFunctions: definedFunctions,
+			m_definedVariables: definedVariables
+		}
 	}
 
 }

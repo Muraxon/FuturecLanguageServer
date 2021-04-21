@@ -5,17 +5,19 @@ export class Script {
 	public m_scriptnumber :number;
 	public m_Position :Position;
 	public m_Uri :string;
+	public m_ScriptType :string;
 
 	public m_IncludeScriptNumbers :number[];
 	public m_IncludeScript :Script[];
 
-	constructor(text :string, number :number, linenumber :Position, uri :string) {
+	constructor(text :string, number :number, linenumber :Position, uri :string, scripttype :string) {
 		//"--------------" + number.toString() + "\n" + 
 		// + "\n" + "--------------"
 		this.m_scripttext = text;
 		this.m_scriptnumber = number;
 		this.m_Position = linenumber;
 		this.m_Uri = uri;
+		this.m_ScriptType = scripttype;
 		this.m_IncludeScriptNumbers = [];
 		this.m_IncludeScript = [];
 	}

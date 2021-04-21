@@ -3,6 +3,7 @@ import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter, documentSe
 import { TextParser } from "./../TextParser";
 import { Script } from '../Script';
 import { CursorPositionType, CursorPositionInformation } from '../CursorPositionInformation';
+import { CParser } from '../Parser/CParser';
 
 
 let completionCached :CompletionItem[] = [];
@@ -23,7 +24,7 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 		triggerChar = CurrentCompletionCharacter;
 		word = TextParser.getWordAtPosition(pos, curDoc, true);
 	}
-	let scripttext :Script|null = null;
+	let script :Script|null = null;
 
 	if(word) {
 		let lineText = curDoc.getText({
@@ -49,11 +50,11 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 					return parserFunctions.getTableFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
 				}
 	
-				scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+				script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 		
-				if(scripttext) {
+				if(script) {
 					let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s*(\\&|)\\s*" + word.m_context + "\\s*(\\=|\\;|\\,|\\))", "g");
-					let m = varPattern.exec(scripttext.m_scripttext);
+					let m = varPattern.exec(script.m_scripttext);
 					
 					if(m) {
 						if(m[1] == "CString") {
@@ -70,13 +71,13 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 			} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
 				let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\((.*)\).*$/gm;
 				elapsed_time("start_completion_call");
-				scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+				script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 				elapsed_time("end_completion_call");
-				if(scripttext) {
+				if(script) {
 					let completionFunction :CompletionItem[] = [];
 					let alreadyAdded :string[] = [];
 					let m :RegExpExecArray|null = null;
-					while(m = patternFunction.exec(scripttext.m_scripttext)) {
+					while(m = patternFunction.exec(script.m_scripttext)) {
 						if(!alreadyAdded.includes(m[2])) {
 							alreadyAdded.push(m[2]);
 							completionFunction.push({
@@ -101,55 +102,96 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 			return completionCached;
 		}
 	}
+	completionCached = [];
 
-	scripttext = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+	script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 
-	if(scripttext) {
 	
+	if(script) {
+		let parser = new CParser();
+		let ScriptInformation = parser.ParseText(docs, script, false);
+
 		let alreadyAdded :string[] = [];
-		completionCached = [];
+		for(let x = 0; x < ScriptInformation.m_definedFunctions.length; x++) {
+			for(let y = 0; y < ScriptInformation.m_definedFunctions[x].length; y++) {
+				if(!alreadyAdded.find((vari) => {
+					if(vari == ScriptInformation.m_definedFunctions[x][y]) {
+						return true;
+					}
+				})) {
+					alreadyAdded.push(ScriptInformation.m_definedFunctions[x][y]);
+					completionCached.push({
+						label: ScriptInformation.m_definedFunctions[x][y],
+						kind: CompletionItemKind.Function
+					})
+				} 
+
+			}
+		}
+
+		alreadyAdded = [];
+		for(let x = 0; x < ScriptInformation.m_definedVariables.length; x++) {
+			ScriptInformation.m_definedVariables[x].forEach((variable, key) => {
+				if(!alreadyAdded.find((vari) => {
+					if(vari == key) {
+						return true;
+					}
+				})) {
+					alreadyAdded.push(key);
+					completionCached.push({
+						label: variable.m_Name,
+						kind: CompletionItemKind.Variable,
+						detail: variable.m_Type
+					});
+				} 
+			})
+		}
+
 		posCached = pos;
+		return completionCached;
+		// 
+		// completionCached = [];
 	
-		let varPatternNew = /\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\s*(\&|)\s*([a-zA-Z0-9_öÖäÄüÜß]+)\s*(\=|\;|\,|\))/g;
+		// let varPatternNew = /\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\s*(\&|)\s*([a-zA-Z0-9_öÖäÄüÜß]+)\s*(\=|\;|\,|\))/g;
 
-		let varPatternForeach = /\bforeachrow(reverse|)\(\s*[a-zA-Z0-9_öÖäÄüÜß]+\s*;\s*([a-zA-Z0-9_öÖäÄüÜß]+)\s*(;|\))/g;
+		// let varPatternForeach = /\bforeachrow(reverse|)\(\s*[a-zA-Z0-9_öÖäÄüÜß]+\s*;\s*([a-zA-Z0-9_öÖäÄüÜß]+)\s*(;|\))/g;
 
-		let text = scripttext.m_scripttext;
-		let m :RegExpExecArray|null = null;
-		while(m = varPatternNew.exec(text)) {
-			if(!alreadyAdded.find((vari) => {
-				if(vari == m![3]) {
-					return true;
-				}
-			})) {
-				alreadyAdded.push(m[3]);
-				completionCached.push({
-					label: m[3],
-					kind: CompletionItemKind.Variable,
-					detail: m[1]
-				});
-			} else {
+		// let text = script.m_scripttext;
+		// let m :RegExpExecArray|null = null;
+		// while(m = varPatternNew.exec(text)) {
+		// 	if(!alreadyAdded.find((vari) => {
+		// 		if(vari == m![3]) {
+		// 			return true;
+		// 		}
+		// 	})) {
+		// 		alreadyAdded.push(m[3]);
+		// 		completionCached.push({
+		// 			label: m[3],
+		// 			kind: CompletionItemKind.Variable,
+		// 			detail: m[1]
+		// 		});
+		// 	} else {
 				
-			}
-		}
+		// 	}
+		// }
 
-		m = null;
-		while(m = varPatternForeach.exec(text)) {
-			if(!alreadyAdded.find((vari) => {
-				if(vari == m![2]) {
-					return true;
-				}
-			})) {
-				alreadyAdded.push(m[2]);
-				completionCached.push({
-					label: m[2],
-					kind: CompletionItemKind.Variable,
-					detail: "foreachrow - Laufvariable"
-				});
-			} else {
+		// m = null;
+		// while(m = varPatternForeach.exec(text)) {
+		// 	if(!alreadyAdded.find((vari) => {
+		// 		if(vari == m![2]) {
+		// 			return true;
+		// 		}
+		// 	})) {
+		// 		alreadyAdded.push(m[2]);
+		// 		completionCached.push({
+		// 			label: m[2],
+		// 			kind: CompletionItemKind.Variable,
+		// 			detail: "foreachrow - Laufvariable"
+		// 		});
+		// 	} else {
 				
-			}
-		}
+		// 	}
+		// }
 	}
 
 	parserFunctions.getConstantVariables().forEach(element => {
