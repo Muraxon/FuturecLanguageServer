@@ -1,16 +1,19 @@
 import {  Position } from 'vscode-languageserver';
 
 export class Script {
+	public m_ScriptName :string;
 	public m_scripttext :string;
 	public m_scriptnumber :number;
 	public m_Position :Position;
 	public m_Uri :string;
 	public m_ScriptType :string;
 
+	public m_MainScript? :Script;
+
 	public m_IncludeScriptNumbers :number[];
 	public m_IncludeScript :Script[];
 
-	constructor(text :string, number :number, linenumber :Position, uri :string, scripttype :string) {
+	constructor(text :string, number :number, linenumber :Position, uri :string, scripttype :string, scriptName :string) {
 		//"--------------" + number.toString() + "\n" + 
 		// + "\n" + "--------------"
 		this.m_scripttext = text;
@@ -18,6 +21,7 @@ export class Script {
 		this.m_Position = linenumber;
 		this.m_Uri = uri;
 		this.m_ScriptType = scripttype;
+		this.m_ScriptName = scriptName;
 		this.m_IncludeScriptNumbers = [];
 		this.m_IncludeScript = [];
 	}

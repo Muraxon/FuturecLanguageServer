@@ -33,6 +33,7 @@ interface ScriptInformation {
 	m_definedVariables :Map<string , Variable>[];
 	m_definedFunctions :string[][];
 	m_diagnostics :Diagnostic[];
+	m_ScopeLevel :number;
 }
 
 export class CParser {
@@ -55,8 +56,7 @@ export class CParser {
 			GlobalAnalyzer.getIncludeScriptForCurrentScript(script, _NotManagedDocs, false);
 		}
 		let text = script.m_scripttext;
-		let pos = text.indexOf("\n");
-		if(pos < 0) { pos = text.length; }
+		let pos = 0;
 
 		let tokens :Token[] = [];
 
@@ -78,6 +78,19 @@ export class CParser {
 				if((pos + 1 < text.length) && (text.charAt(pos + 1) == "/")) {
 					let posTemp = text.indexOf("\n", pos);
 					if(posTemp > pos) {
+
+						if(script.m_ScriptType == "SCRIPT") {
+							let reg = /\/\/\s*ADDHOOK[^0-9]*([0-9]+).*\s*/g;
+							let tempText = text.substring(pos, posTemp);
+							let m = reg.exec(tempText);
+							if(m) {
+								let token = new Token("__ADDHOOK__", {start: pos, end: pos + 9});
+								let token2 = new Token(m[1], {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
+						
+								tokens.push(token);
+								tokens.push(token2);
+							}
+						}
 						pos = posTemp;
 						startOfIdentifier = -1;
 					} else {
@@ -271,6 +284,10 @@ export class CParser {
 		let scopeLevel = 0;
 		if(scopeLevel_) {
 			scopeLevel = scopeLevel_;
+		}
+
+		if(script.m_MainScript) {
+			scopeLevel = this.ParseText(_NotManagedDocs, script.m_MainScript, false, definedVariables, definedFunctions, 0).m_ScopeLevel;
 		}
 
 		let savedScopeLevel :number[] = [];
@@ -645,7 +662,6 @@ export class CParser {
 				}
 				else if(this.IsType(currentTokenText)) {
 					let secondToken = this.getToken(tokens,i + 1);
-					
 					let nextIdent = secondToken.m_Text;
 					if(this.isKeyword(nextIdent) || this.IsType(nextIdent) || this.isControlChar(nextIdent)) {
 						this.addError("unexpected keyword, variable declaration or control character detected: `"+ nextIdent +"`", diag, doc, scriptPos, secondToken,isIncludescript);
@@ -765,8 +781,15 @@ export class CParser {
 						i += 1
 					}
 				}
+				else if(currentTokenText == "__ADDHOOK__") {
+					let secondToken = this.getToken(tokens, i + 1);
+					
+
+					i += 1;
+				}
 				else {
 					if(this.IsVariable(currentTokenText)) {
+						
 						let variable = undefined;
 						let j = 0;
 						while(variable == undefined && j <= scopeLevel) {
@@ -818,8 +841,10 @@ export class CParser {
 					}
 				}
 			}
-			if(tokens[tokens.length - 1].m_Text != ";") {
-				this.addError("`;` expected at the end of the script", diag, doc, scriptPos, tokens[tokens.length - 1], isIncludescript);	
+			if(tokens.length >= 2) {
+				if(tokens[tokens.length - 1].m_Text != ";") {
+					this.addError("`;` expected at the end of the script", diag, doc, scriptPos, tokens[tokens.length - 1], isIncludescript);	
+				}
 			}
 
 		} catch (token) {
@@ -829,7 +854,8 @@ export class CParser {
 		}
 		return { m_diagnostics: diag,
 			m_definedFunctions: definedFunctions,
-			m_definedVariables: definedVariables
+			m_definedVariables: definedVariables,
+			m_ScopeLevel: scopeLevel
 		}
 	}
 

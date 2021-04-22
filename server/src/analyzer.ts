@@ -167,7 +167,7 @@ export class Analyzer {
 		return posToc;
 	}
 
-	getScripts(scripts :number[], _NotManagedDocs :Map<string, TextDocument>) :Script[]|null {
+	getScripts(scripts :number[], _NotManagedDocs :Map<string, TextDocument>, extractToText :string|null = null) :Script[]|null {
 		let scriptsText :Script[] = [];
 
 		let alreadFoundScript :number[] = [];
@@ -187,11 +187,16 @@ export class Analyzer {
 					if(m) {
 						patternEndOfScript.lastIndex = m.index;
 		
-						let m2 = patternEndOfScript.exec(text);
+						let m2 = null;
+						if(!extractToText) {
+							patternEndOfScript.exec(text);
+						} else {
+							m2 = { index: text.indexOf(extractToText, m.index) };
+						}
 						if(m2) {
 							if(!alreadFoundScript.includes(element)) {
 								let posScript = elementTextDocu.positionAt(m.index);
-								scriptsText.push(new Script(text.substr(m.index, m2.index - m.index), element, posScript, elementTextDocu.uri, "SCRIPT"));
+								scriptsText.push(new Script(text.substr(m.index, m2.index - m.index), element, posScript, elementTextDocu.uri, "SCRIPT", "TEST"));
 							} else {
 								alreadFoundScript.push(element);
 							}
@@ -208,7 +213,7 @@ export class Analyzer {
 	}
 
 	getCompleteCurrentScript(CursorPos :Position, doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>, includescript :boolean = true, toPos :boolean = false, replaceIncludeScriptText :boolean = true) :Script|null {
-		let editedScript = this.getEditedScript(CursorPos, doc, toPos);
+		let editedScript = this.getEditedScript(CursorPos, doc, toPos, false, _NotManagedDocs);
 		if(editedScript && includescript) {
 			this.getIncludeScriptForCurrentScript(editedScript, _NotManagedDocs, replaceIncludeScriptText);
 		}
@@ -239,13 +244,13 @@ export class Analyzer {
 		}	
 	}
 
-	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false, withHeader :boolean = true) :Script|null {
+	public getEditedScript(CursorPos :Position, doc :TextDocument, toPos :boolean = false, withHeader :boolean = true, _NotManagedDocs: Map<string, TextDocument>|null = null) :Script|null {
 		let editedScript :Script|null = null;
 
 		let completeDocText = doc.getText();
 		let offset = doc.offsetAt(CursorPos);
 
-		let mStartScript = /^(SCRIPT|INSERTINTOSCRIPT|ADDTOSCRIPT):([0-9]+).*$/gm;
+		let mStartScript = /^(SCRIPT|INSERTINTOSCRIPT|ADDTOSCRIPT):([0-9]+),(.*)$/gm;
 		let mStartWithoutheader = /\r\n/g;
 
 		let finalStart :RegExpExecArray|null = null;
@@ -256,6 +261,15 @@ export class Analyzer {
 			}
 			mStartWithoutheader.lastIndex = mStartScript.lastIndex;
 			finalStart = mStart;
+		}
+
+		let scriptNumber = 0;
+		let scriptType = "";
+		let scriptName = "";
+		if(finalStart) {
+			scriptNumber = parseInt(finalStart[2]);
+			scriptType = finalStart[1];
+			scriptName = finalStart[3];
 		}
 
 		if(!withHeader) {
@@ -278,7 +292,13 @@ export class Analyzer {
 			}
 
 			if(end > 0) {
-				editedScript = new Script(completeDocText.substring(finalStart.index, end), parseInt(finalStart[2]), doc.positionAt(finalStart.index), doc.uri, finalStart[1]);
+				editedScript = new Script(completeDocText.substring(finalStart.index, end), scriptNumber, doc.positionAt(finalStart.index), doc.uri, scriptType, scriptName);
+				if(scriptType == "INSERTINTOSCRIPT" && _NotManagedDocs) {
+					let mainScript = this.getScripts([scriptNumber], _NotManagedDocs, scriptName);
+					if(mainScript && mainScript.length == 1) {
+						editedScript.m_MainScript = mainScript[0];
+					}
+				}
 			}
 		}
 
