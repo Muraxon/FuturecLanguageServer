@@ -1,7 +1,9 @@
+import { cachedDataVersionTag } from 'v8';
 import { Diagnostic, Position, TextDocument, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments, DiagnosticSeverity} from 'vscode-languageserver';
 import { Script } from './Script';
 import { TextParser } from './TextParser';
 
+let cachedMainScript :Script|null = null;
 
 export class Analyzer {
 
@@ -189,7 +191,7 @@ export class Analyzer {
 		
 						let m2 = null;
 						if(!extractToText) {
-							patternEndOfScript.exec(text);
+							m2 = patternEndOfScript.exec(text);
 						} else {
 							m2 = { index: text.indexOf(extractToText, m.index) };
 						}
@@ -294,18 +296,51 @@ export class Analyzer {
 			if(end > 0) {
 				editedScript = new Script(completeDocText.substring(finalStart.index, end), scriptNumber, doc.positionAt(finalStart.index), doc.uri, scriptType, scriptName);
 				if(scriptType == "INSERTINTOSCRIPT" && _NotManagedDocs) {
-					let mainScript = this.getScripts([scriptNumber], _NotManagedDocs, scriptName);
-					if(mainScript && mainScript.length == 1) {
-						editedScript.m_MainScript = mainScript[0];
+
+					if((!cachedMainScript) || (cachedMainScript && cachedMainScript.m_scriptnumber != scriptNumber) || (cachedMainScript && cachedMainScript.m_ScriptName != scriptName)) {
+						let mainScript = this.getScripts([scriptNumber], _NotManagedDocs, scriptName);
+						if(mainScript && mainScript.length == 1) {
+							let MainScript = mainScript[0];
+							this.getIncludeScriptForCurrentScript(MainScript, _NotManagedDocs, false);
+							this.getHooksForCurrentDocument(MainScript, doc);
+							editedScript.m_MainScript = MainScript;
+						}
+						if(editedScript && editedScript.m_MainScript) {
+							let newScript = new Script(editedScript.m_MainScript.m_scripttext, editedScript.m_MainScript.m_scriptnumber, editedScript.m_MainScript.m_Position, editedScript.m_MainScript.m_Uri, editedScript.m_MainScript.m_ScriptType, editedScript.m_MainScript.m_ScriptName);
+							cachedMainScript = newScript;
+						}
+					} else {
+						let newScript = new Script(cachedMainScript.m_scripttext, cachedMainScript.m_scriptnumber, cachedMainScript.m_Position, cachedMainScript.m_Uri, cachedMainScript.m_ScriptType, cachedMainScript.m_ScriptName);
+						editedScript.m_MainScript = newScript;
+						this.getHooksForCurrentDocument(editedScript.m_MainScript, doc);
 					}
+
+				} else {
+					cachedMainScript = null;
 				}
 			}
 		}
 
-		
 
 
 		return editedScript;
+	}
+
+	getHooksForCurrentDocument(script :Script, doc :TextDocument) {
+		let found = -1;
+		let documentText = doc.getText();
+		found = documentText.indexOf("INSERTINTOSCRIPT:" + script.m_scriptnumber.toString() + ",", found + 1);
+		while(found >= 0) {
+			let iHookend = documentText.indexOf("\n", found + 1);
+			let hookName = documentText.substring(found + ("INSERTINTOSCRIPT:" + script.m_scriptnumber.toString() + ",").length, iHookend);
+
+			let scriptEnd = documentText.indexOf("ENDSCRIPT", found + 1);
+
+			let scriptText = documentText.substring(iHookend, scriptEnd);
+
+			script.m_HooksForDocument.push(new Script(scriptText, script.m_scriptnumber, doc.positionAt(found), doc.uri, "INSERTINTOSCRIPT", hookName.trim()));
+			found = documentText.indexOf("INSERTINTOSCRIPT:" + script.m_scriptnumber.toString() + ",", found + 1);
+		}
 	}
 
 	getAllScripts(doc :TextDocument) :String[] {

@@ -80,15 +80,17 @@ export class CParser {
 					if(posTemp > pos) {
 
 						if(script.m_ScriptType == "SCRIPT") {
-							let reg = /\/\/\s*ADDHOOK[^0-9]*([0-9]+).*\s*/g;
+							let reg = /\/\/\s*(ADDHOOK[^0-9]*[0-9]+.*)\s*/g;
 							let tempText = text.substring(pos, posTemp);
 							let m = reg.exec(tempText);
 							if(m) {
 								let token = new Token("__ADDHOOK__", {start: pos, end: pos + 9});
-								let token2 = new Token(m[1], {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
+								let token2 = new Token(script.m_scriptnumber.toString(), {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
+								let token3 = new Token("//" + m[1], {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
 						
 								tokens.push(token);
 								tokens.push(token2);
+								tokens.push(token3);
 							}
 						}
 						pos = posTemp;
@@ -287,8 +289,8 @@ export class CParser {
 		}
 
 		if(script.m_MainScript) {
-			scopeLevel = this.ParseText(_NotManagedDocs, script.m_MainScript, false, definedVariables, definedFunctions, 0).m_ScopeLevel;
-		}
+			scopeLevel = this.ParseText(_NotManagedDocs, script.m_MainScript, true, definedVariables, definedFunctions, 0).m_ScopeLevel;
+		} 
 
 		let savedScopeLevel :number[] = [];
 		let addNextTimeSameScope :boolean[] = [];
@@ -315,6 +317,8 @@ export class CParser {
 						definedVariables.pop();
 						definedFunctions.pop();
 						scopeLevel--;
+					}else {
+						this.addError("One `}` is unexpected. You are already in the global scope", diag, doc, scriptPos, currentToken,isIncludescript);
 					}
 				}
 				else if(currentTokenText == "FUNCTION") {
@@ -496,6 +500,8 @@ export class CParser {
 						definedFunctions.pop();
 						definedVariables.pop();
 						scopeLevel--;
+					} else {
+						this.addError("One `}` is unexpected. You are already in the global scope", diag, doc, scriptPos, currentToken,isIncludescript);
 					}
 				}else if(currentTokenText == "{") {
 					scopeLevel++;
@@ -783,6 +789,14 @@ export class CParser {
 				}
 				else if(currentTokenText == "__ADDHOOK__") {
 					let secondToken = this.getToken(tokens, i + 1);
+					let thirdToken = this.getToken(tokens, i + 2);
+
+					for(let x = 0; x < script.m_HooksForDocument.length; x++) {
+						if(script.m_HooksForDocument[x].m_ScriptName == thirdToken.m_Text) {
+							this.ParseText(_NotManagedDocs, script.m_HooksForDocument[x], isIncludescript, definedVariables, definedFunctions, scopeLevel);
+							break;
+						}
+					}
 					
 
 					i += 1;
@@ -832,6 +846,7 @@ export class CParser {
 							}
 							i += 3;
 						} else {
+
 							if(!this.isControlChar(secondToken.m_Text)) {
 								this.addError("Expression after variable expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken, isIncludescript);
 							} else {

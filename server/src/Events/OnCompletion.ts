@@ -1,5 +1,5 @@
 import { TextDocument, CompletionItem, Position, CompletionItemKind, MarkupKind } from 'vscode-languageserver';
-import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter, documentSettings } from '../server';
+import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter, getDocumentSettings } from '../server';
 import { TextParser } from "./../TextParser";
 import { Script } from '../Script';
 import { CursorPositionType, CursorPositionInformation } from '../CursorPositionInformation';
@@ -32,7 +32,7 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 			end: {character: 100000, line: pos.line}
 		});
 
-		let adjust = await documentSettings.get(curDoc.uri);
+		let adjust ={AutocompletionMitZusaetzlichenTextedits: false};
 		if(adjust) {
 
 			if(word.m_context == "D" && triggerChar.length == 1) {
@@ -51,44 +51,56 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 				}
 	
 				script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
-		
+				
 				if(script) {
-					let varPattern = new RegExp("\\b(int|CString|CTable|double|CMoney|CDateTime|float|BOOL)\\s*(\\&|)\\s*" + word.m_context + "\\s*(\\=|\\;|\\,|\\))", "g");
-					let m = varPattern.exec(script.m_scripttext);
-					
+					let parser = new CParser();
+					let ScriptInformation = parser.ParseText(docs, script, false);
+					let m :string|null = null;
+
+					for(let x = 0; x < ScriptInformation.m_definedVariables.length; x++) {
+						let variable = ScriptInformation.m_definedVariables[x].get(word.m_context);
+						if(variable) {
+							m = variable.m_Type;
+							break;
+						}
+					}
+
 					if(m) {
-						if(m[1] == "CString") {
+						if(m == "CString") {
 							return parserFunctions.getCStringFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
-						} else if(m[1] == "CTable") {
+						} else if(m == "CTable") {
 							return parserFunctions.getTableFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
-						} else if(m[1] == "CMoney") {
+						} else if(m == "CMoney") {
 							return parserFunctions.getMoneyFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
-						} else if(m[1] == "CDateTime") {
+						} else if(m == "CDateTime") {
 							return parserFunctions.getDateTimeFunctions(pos, word, lineText, adjust.AutocompletionMitZusaetzlichenTextedits);
 						} 
 					}
 				}
 			} else if(word.m_word == "Call:" && word.m_type == CursorPositionType.USERDEFINED_FUNCTION) {
 				let patternFunction = /\bFUNCTION:\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\s+(.*)\((.*)\).*$/gm;
-				elapsed_time("start_completion_call");
 				script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
-				elapsed_time("end_completion_call");
 				if(script) {
+					let parser = new CParser();
+					let scriptInfo = parser.ParseText(docs, script, false);
+
 					let completionFunction :CompletionItem[] = [];
 					let alreadyAdded :string[] = [];
 					let m :RegExpExecArray|null = null;
-					while(m = patternFunction.exec(script.m_scripttext)) {
-						if(!alreadyAdded.includes(m[2])) {
-							alreadyAdded.push(m[2]);
-							completionFunction.push({
-								label: <string>m[2],
-								commitCharacters: ["("],
-								kind: CompletionItemKind.Function,
-								documentation: {
-									kind: MarkupKind.Markdown,
-									value: '`return ' + <string>m[1] + '`' + '\n\n' + m[3]
-								}
-							});
+					for(let x = 0; x < scriptInfo.m_definedFunctions.length; x++) {
+						for(let y = 0; y < scriptInfo.m_definedFunctions[x].length; y++) {
+							if(!alreadyAdded.includes(scriptInfo.m_definedFunctions[x][y])) {
+								alreadyAdded.push(scriptInfo.m_definedFunctions[x][y]);
+								completionFunction.push({
+									label: scriptInfo.m_definedFunctions[x][y],
+									commitCharacters: ["("],
+									kind: CompletionItemKind.Function,
+									documentation: {
+										kind: MarkupKind.Markdown,
+										value: '`return ' + scriptInfo.m_definedFunctions[x][y] + '`'
+									}
+								});
+							}
 						}
 					}
 					return completionFunction;
@@ -106,7 +118,6 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 
 	script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 
-	
 	if(script) {
 		let parser = new CParser();
 		let ScriptInformation = parser.ParseText(docs, script, false);

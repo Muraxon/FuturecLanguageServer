@@ -1,4 +1,5 @@
 import { TextDocument, Hover, SignatureHelp, ParameterInformation, SignatureInformation, MarkupContent, Position } from 'vscode-languageserver';
+import { CParser } from '../Parser/CParser';
 import { TextParser } from '../TextParser';
 import { parserFunctions, GlobalAnalyzer } from './../server';
 
@@ -148,10 +149,14 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 			} else {
 				let script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
 				if(script) {
-					let contextTypeReg = new RegExp("\\b(CTable|CString|CMoney|CDateTime)\\b\\s*(&|)\\s*\\b"+word.m_context+"\\b")
-					let m = contextTypeReg.exec(script.m_scripttext);
-					if(m) {
-						word.m_context = <string>m[1];
+					let parser = new CParser();
+					let scriptInfo = parser.ParseText(docs, script, false);
+					for(let x = 0; x < scriptInfo.m_definedVariables.length; x++) {
+						let variable = scriptInfo.m_definedVariables[x].get(word.m_context);
+						if(variable) {
+							word.m_context = variable.m_Type;
+							break;
+						}
 					}
 				}
 

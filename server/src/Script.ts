@@ -9,6 +9,7 @@ export class Script {
 	public m_ScriptType :string;
 
 	public m_MainScript? :Script;
+	public m_HooksForDocument :Script[];
 
 	public m_IncludeScriptNumbers :number[];
 	public m_IncludeScript :Script[];
@@ -24,6 +25,7 @@ export class Script {
 		this.m_ScriptName = scriptName;
 		this.m_IncludeScriptNumbers = [];
 		this.m_IncludeScript = [];
+		this.m_HooksForDocument = [];
 	}
 
 	addScripts(replaceIncludeScriptText :boolean, ...Script: Script[]) {
@@ -37,9 +39,9 @@ export class Script {
 			if(replaceIncludeScriptText) {
 				while(this.m_scripttext.search(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b")) >= 0) {
 					this.m_scripttext = this.m_scripttext.replace(new RegExp("\\#includescript\\s+" + element.m_scriptnumber + "\\b"), element.m_scripttext);
-					this.m_IncludeScriptNumbers.push(element.m_scriptnumber);
 				}
 			}
+			this.m_IncludeScriptNumbers.push(element.m_scriptnumber);
 			this.m_IncludeScript.push(element);
 		});
 	}
