@@ -61,6 +61,7 @@ export let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 export let CurrentCompletionCharacter :string|undefined = undefined;
 
+
 connection.onInitialize((params: InitializeParams) => {
 	let capabilities = params.capabilities;
 	paramsimpl = params;
@@ -305,6 +306,12 @@ connection.onNotification("custom/sendCursorPos", (obj) => {
 	}
 });
 
+
+let cachedCodeLensPos :Position|null = null;
+connection.onNotification("custom/sendCursorPosReturn", (obj) => {
+	cachedCodeLensPos = obj.pos;
+});
+
 connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPositionParams) :Position => {
 	let doc = documents.get(param.textDocument.uri);
 	if(doc) {
@@ -435,19 +442,20 @@ connection.onCompletionResolve(
 );
 
 
-let codelens :CodeLens[] = [];
 connection.onCodeLens(async (params, token):Promise<CodeLens[]> => {
+	let codelens :CodeLens[] = [];
 	let doc = documents.get(params.textDocument.uri);
-	codelens = [];
-	if(doc) {
+	if(doc && cachedCodeLensPos) {
 		let setting = await documentSettings.get(params.textDocument.uri);
 		if(setting && setting.CodeLens) {
-			let text = doc.getText();
-			let pattern = /^SCRIPT:([0-9]+),.*$/gm;
-			let m = pattern.exec(text);
-			while(m) {
-	
-				let pos = doc.positionAt(pattern.lastIndex);
+			let script = GlobalAnalyzer.getCompleteCurrentScript({
+				character: cachedCodeLensPos.character, line: cachedCodeLensPos.line
+			}, doc, new Map(), false, false, false);
+			let text = "";
+			if(script) {
+				let tempDoc = TextDocument.create(doc.uri, "futurec", 0, script.m_scripttext);
+				text = script.m_scripttext;
+				let pos = script.m_Position;
 				codelens.push({
 					range: {
 						end: pos,
@@ -457,10 +465,9 @@ connection.onCodeLens(async (params, token):Promise<CodeLens[]> => {
 						command: "custom.add.create.design.entry",
 						title: "Skript in Design einfügen",
 						arguments: [{
-							scriptNumber: Number.parseInt(m[1])
+							scriptNumber: script.m_scriptnumber
 						}]
-					},
-					data: Number.parseInt(m[2])
+					}
 				});
 	
 				codelens.push({
@@ -472,13 +479,45 @@ connection.onCodeLens(async (params, token):Promise<CodeLens[]> => {
 						command: "custom.delete.design.entry",
 						title: "Skript aus Design entfernen",
 						arguments: [{
-							scriptNumber: Number.parseInt(m[1])
+							scriptNumber: script.m_scriptnumber
 						}]
-					},
-					data: Number.parseInt(m[2])
+					}
 				});
+		
 	
-				m = pattern.exec(text);
+				let pattern2 = /^.*(\/\/ADDHOOK[^0-9]*[0-9]+.*)\s*.*$/gm;
+				let m = pattern2.exec(text);
+				while(m) {
+					let pos2 = tempDoc.positionAt(m.index);
+					codelens.push({
+						range: {
+							end: {
+								character: pos2.character,
+								line: pos.line + pos2.line
+							},
+							start: {
+								character: pos2.character,
+								line: pos.line + pos2.line
+							}
+						},
+						command: { 
+							title:"Hook suchen",
+							command: "workbench.action.findInFiles",
+							arguments: [{
+								query: m[1],
+								triggerSearch: true,
+								preserveCase: true,
+								useExcludeSettingsAndIgnoreFiles: true,
+								isRegex: false,
+								isCaseSensitive: true,
+								matchWholeWord: true,
+								filesToInclude: "**/*.cpp",
+							}]
+						}
+					});
+		
+					m = pattern2.exec(text);
+				}
 			}
 		}
 	}

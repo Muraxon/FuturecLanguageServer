@@ -83,6 +83,7 @@ export function activate(context: ExtensionContext) {
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
 			handleDiagnostics: (uri, diag, next) => {
+
 				let diag_temp :Diagnostic[] = [];
 				let diag_temp2 :Diagnostic[] = [];
 				for(let x = 0; x < diag.length; x++) {
@@ -220,7 +221,9 @@ export function activate(context: ExtensionContext) {
 
 		client.onNotification("custom/getCursorPos", async () => {
 			client.sendNotification("custom/sendCursorPos", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
+			client.sendNotification("custom/sendCursorPosReturn", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
 		})
+
 	});
 
 	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
@@ -711,9 +714,7 @@ export function activate(context: ExtensionContext) {
 	// Start the client. This will also launch the server
 	client.start();
 	window.showInformationMessage("activation finished");
-	
-};
-
+}
 
 export function deactivate(): Thenable<void> | undefined {
 	if (!client) {

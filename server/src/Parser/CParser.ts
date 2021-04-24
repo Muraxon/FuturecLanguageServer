@@ -61,6 +61,30 @@ export class CParser {
 	constructor() {
 		
 	}
+	isVariableDefined(variable :string, definedVariables_ :Map<string, Variable>[], scope :number) :Variable|undefined {
+		let j = 0;
+		let variable_tmp :Variable|undefined = undefined;
+		while(variable_tmp == undefined && j <= scope) {
+			variable_tmp = definedVariables_[j].get(variable);
+			if(variable_tmp) { break; }
+			j++;
+		}
+		return variable_tmp;
+	}
+	
+	isFunctionDefined(functionname :string, definedFunctions :string[][], scope :number) :number {
+		let index :number = -1;
+		let x = 0;
+		while(index < 0 && x <= scope) {
+			if(definedFunctions[x]) {
+				index = definedFunctions[x].indexOf(functionname);
+				x++;
+			} else {
+				break;
+			}
+		}
+		return index;
+	}
 
 	ParseText(_NotManagedDocs :Map<string, TextDocument>, script :Script, isIncludescript :boolean, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null) :ScriptInformation {
 		if(isIncludescript) {
@@ -189,7 +213,7 @@ export class CParser {
 	}
 
 	IsType(text :string) {
-		if(text == "BOOL" || text == "void" || text == "CTable" || text == "CMoney" || text == "CDateTime" || text == "CString" || text == "int" || text == "double") {
+		if(text == "BYTE" || text == "BOOL" || text == "void" || text == "CTable" || text == "CMoney" || text == "CDateTime" || text == "CString" || text == "int" || text == "double") {
 			return true;
 		}
 		return false;
@@ -240,6 +264,7 @@ export class CParser {
 		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int", false));
 		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL", false));
 		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int", false));
+		vars.set("m_tSelectionTable", new Variable("m_tSelectionTable", 0, "CTable", false));
 
 		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString", false));
 		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString", false));
@@ -254,6 +279,8 @@ export class CParser {
 		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString", false));
 		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString", false));
 		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString", false));
+		vars.set("STRING_RAUTE", new Variable("STRING_RAUTE", 0, "CString", false));
+		vars.set("STRING_CARRIAGERETURN", new Variable("STRING_CARRIAGERETURN", 0, "CString", false));
 
 		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "CString", false));
 		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "CString", false));
@@ -278,6 +305,9 @@ export class CParser {
 		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString", false));
 		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString", false));
 		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "CString", false));
+		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "CString", false));
+		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "CString", false));
+		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "CString", false));
 	}
 
 	processTokens(_NotManagedDocs :Map<string, TextDocument>,
@@ -328,8 +358,10 @@ export class CParser {
 		let savedScopeLevel :number[] = [];
 		let addNextTimeSameScope :boolean[] = [];
 
+		let functionReturnType = "";
+		let functionReturnTypeProcessed = false;
 		try {
-			
+
 			for(let i = 0; i < tokens.length; i++) {
 				let currentToken = this.getToken(tokens,i);
 				let currentTokenText = currentToken.m_Text;
@@ -345,7 +377,13 @@ export class CParser {
 					if(secondToken.m_Text != ";") {
 						this.addError("After ENDFUNCTION must follow an `;`", diag, doc, scriptPos, secondToken, isIncludescript);
 					}
+					
+					if(!functionReturnTypeProcessed && functionReturnType != "void") {
+						this.addError("Returntype != `void`, returntype must be of type `"+functionReturnType+"`", diag, doc, scriptPos, currentToken, isIncludescript);
+					}
 
+					functionReturnTypeProcessed = false;
+					functionReturnType = "";
 					if(scopeLevel - 1 >= 0) {
 						definedVariables.pop();
 						definedFunctions.pop();
@@ -368,17 +406,9 @@ export class CParser {
 							this.addError("Type (CString|int|double|CTable|CDateTime|CMoney|BOOL) was expected `"+thirdToken.m_Text+"`", diag, doc, scriptPos, thirdToken, isIncludescript);
 						} else {
 							let functionText = tokens[i + 3].m_Text;
+							functionReturnType = thirdToken.m_Text;
 
-							let index :number = -1;
-							let x = 0;
-							while(index < 0 && x <= scopeLevel) {
-								if(definedFunctions[x]) {
-									index = definedFunctions[x].indexOf(functionText);
-									x++;
-								} else {
-									break;
-								}
-							}
+							let index :number = this.isFunctionDefined(functionText, definedFunctions, scopeLevel);
 							if(index >= 0) {
 								this.addError("function `"+functionText+"` already defined", diag, doc, scriptPos, tokens[i + 3], isIncludescript);
 							} else {
@@ -451,12 +481,7 @@ export class CParser {
 					if(secondToken.m_Text == ":") {
 						let thirdToken = this.getToken(tokens,i + 2);
 
-						let index :number = -1;
-						let x = 0;
-						while(index < 0 && x <= scopeLevel) {
-							index = definedFunctions[x].indexOf(thirdToken.m_Text);
-							x++;
-						}
+						let index :number = this.isFunctionDefined(thirdToken.m_Text, definedFunctions, scopeLevel);
 						if(index < 0) {
 							this.addError("No Function with name `"+thirdToken.m_Text+"` found. Maybe this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, thirdToken, isIncludescript, DiagnosticSeverity.Information);
 						}
@@ -634,12 +659,8 @@ export class CParser {
 										if(tokenAfterParagraph.m_Text == "$") {
 											let tempToken = this.getToken(tokens,i + 1);
 											if(this.IsVariable(tempToken.m_Text)) {
-												let j = 0;
-												let variable :Variable|undefined = undefined;
-												while(variable == undefined && j <= scopeLevel) {
-													variable = definedVariables[j].get(tempToken.m_Text);
-													j++;
-												}
+												
+												let variable = this.isVariableDefined(tempToken.m_Text, definedVariables, scopeLevel);
 												if(!variable) {
 													let errorText = "`"+tempToken.m_Text+"` possibly not defined, maybe";
 													let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
@@ -715,7 +736,6 @@ export class CParser {
 								variable = definedVariables[j].get(nextIdent);
 								j++;
 							}
-
 							if(variable) {
 								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Hint);
 							}
@@ -734,9 +754,33 @@ export class CParser {
 				}
 				else if(this.isKeyword(currentTokenText)) {
 					if(currentTokenText == "funcreturn") {
+						functionReturnTypeProcessed = true;
+						if(functionReturnType.length > 0) {
+							if(functionReturnType == "void") {
+								this.addError("Functions returntype is void. `funcreturn` is not allowed", diag, doc, scriptPos, currentToken, isIncludescript);
+							}
+						}
+
 						let secondToken = this.getToken(tokens,i + 1);
 						if(!this.IsVariable(secondToken.m_Text)) {
 							this.addError("variable expected `"+secondToken.m_Text+"`", diag, doc, scriptPos, secondToken,isIncludescript);
+						} else {
+							let variable = this.isVariableDefined(secondToken.m_Text, definedVariables, scopeLevel);
+							if(!variable) {
+								let errorText = "`"+currentTokenText+"` possibly not defined, maybe";
+								let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
+								if(hasIncludescript) {
+									severity = DiagnosticSeverity.Information;
+									errorText += " it is defined in an includescript, or";
+								}
+								this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, secondToken, isIncludescript, severity);
+							} else {
+								if(functionReturnType.length > 0) {
+									if(functionReturnType != variable.m_Type) {
+										this.addError("Returntype mismatch `"+functionReturnType+"` != `"+variable.m_Type+"`", diag, doc, scriptPos, currentToken, isIncludescript);
+									}
+								}
+							}
 						}
 					}
 					if(currentTokenText == "foreachrow" || currentTokenText == "foreachrowreverse") {
@@ -744,6 +788,16 @@ export class CParser {
 						if(secondToken.m_Text == "(") {
 							let thirdToken = this.getToken(tokens,i + 2);
 							if(this.IsVariable(thirdToken.m_Text)) {
+								let variable = this.isVariableDefined(thirdToken.m_Text, definedVariables, scopeLevel);
+								if(!variable) {
+									let errorText = "`"+currentTokenText+"` possibly not defined, maybe";
+									let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
+									if(hasIncludescript) {
+										severity = DiagnosticSeverity.Information;
+										errorText += " it is defined in an includescript, or";
+									}
+									this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, thirdToken, isIncludescript, severity);
+								}
 								let fourthToken = this.getToken(tokens,i + 3);
 								if(fourthToken.m_Text == ";") {
 									let fifthToken = this.getToken(tokens,i + 4);
@@ -837,13 +891,7 @@ export class CParser {
 				else {
 					if(this.IsVariable(currentTokenText)) {
 						
-						let variable = undefined;
-						let j = 0;
-						while(variable == undefined && j <= scopeLevel) {
-							variable = definedVariables[j].get(currentTokenText);
-							j++;
-						}
-	
+						let variable = this.isVariableDefined(currentTokenText, definedVariables, scopeLevel);
 						if(!variable) {
 							let errorText = "`"+currentTokenText+"` possibly not defined, maybe";
 							let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
