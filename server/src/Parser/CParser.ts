@@ -22,10 +22,21 @@ class Variable {
 	m_Name :string;
 	m_Scope :number;
 	m_Type :string;
-	constructor(name :string, scope :number, type :string) {
+	m_IsUsed :boolean;
+	m_Token :Token|null;
+	m_IsInIncludescript :boolean;
+
+	constructor(name :string, scope :number, type :string, isInIncludescript :boolean, token: Token|null = null) {
 		this.m_Name = name;
 		this.m_Scope = scope;
 		this.m_Type = type;
+		this.m_IsUsed = false;
+		this.m_Token = token;
+		this.m_IsInIncludescript = isInIncludescript;
+	}
+
+	used() {
+		this.m_IsUsed = true;
 	}
 }
 
@@ -86,7 +97,7 @@ export class CParser {
 							if(m) {
 								let token = new Token("__ADDHOOK__", {start: pos, end: pos + 9});
 								let token2 = new Token(script.m_scriptnumber.toString(), {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
-								let token3 = new Token("//" + m[1], {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
+								let token3 = new Token("//" + m[1], {start: pos, end: pos + (<string>m[1]).length + 2});
 						
 								tokens.push(token);
 								tokens.push(token2);
@@ -96,6 +107,20 @@ export class CParser {
 						pos = posTemp;
 						startOfIdentifier = -1;
 					} else {
+						if(script.m_ScriptType == "SCRIPT") {
+							let reg = /\/\/\s*(ADDHOOK[^0-9]*[0-9]+.*)\s*/g;
+							let tempText = text.substring(pos);
+							let m = reg.exec(tempText);
+							if(m) {
+								let token = new Token("__ADDHOOK__", {start: pos, end: pos + 9});
+								let token2 = new Token(script.m_scriptnumber.toString(), {start: pos + 10, end: pos + 10 + (<string>m[1]).length});
+								let token3 = new Token("//" + m[1], {start: pos, end: pos + (<string>m[1]).length + 2});
+						
+								tokens.push(token);
+								tokens.push(token2);
+								tokens.push(token3);
+							}
+						}
 						pos = text.length;
 					}
 					continue;
@@ -139,7 +164,7 @@ export class CParser {
 		return this.processTokens(_NotManagedDocs, tokens, script, definedVariables_, definedFunctions_, scopeLevel_, isIncludescript);
 	}
 
-	addError(text :string, diag :Diagnostic[], doc :TextDocument, scriptPos :Position, token :Token, isIncludescript :boolean, serverity :DiagnosticSeverity = DiagnosticSeverity.Error) {
+	addError(text :string, diag :Diagnostic[], doc :TextDocument, scriptPos :Position, token :Token, isIncludescript :boolean, serverity :DiagnosticSeverity = DiagnosticSeverity.Error, code :number = 0) {
 		// do NOT add Errors when we parse tokens in an includescript
 		if(isIncludescript) { return; }
 
@@ -158,7 +183,8 @@ export class CParser {
 				}
 			},
 			severity: serverity,
-			source: "futurec"
+			source: "futurec",
+			code: code
 		})
 	}
 
@@ -201,60 +227,67 @@ export class CParser {
 	}
 
 	AddStandardVariables(vars :Map<string, Variable>) {
-		vars.set("FALSE", new Variable("FALSE", 0, "BOOL"));
-		vars.set("TRUE", new Variable("TRUE", 0, "BOOL"));
-		vars.set("DIR_DOWN", new Variable("DIR_DOWN", 0, "BOOL"));
-		vars.set("DIR_UP", new Variable("DIR_UP", 0, "BOOL"));
-		vars.set("m_Rec", new Variable("m_Rec", 0, "CTable"));
-		vars.set("m_Rec2", new Variable("m_Rec2", 0, "CTable"));
-		vars.set("m_RecNr", new Variable("m_RecNr", 0, "int"));
-		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int"));
-		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "CString"));
-		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "CString"));
-		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int"));
-		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL"));
-		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int"));
+		vars.set("FALSE", new Variable("FALSE", 0, "BOOL", false));
+		vars.set("TRUE", new Variable("TRUE", 0, "BOOL", false));
+		vars.set("DIR_DOWN", new Variable("DIR_DOWN", 0, "BOOL", false));
+		vars.set("DIR_UP", new Variable("DIR_UP", 0, "BOOL", false));
+		vars.set("m_Rec", new Variable("m_Rec", 0, "CTable", false));
+		vars.set("m_Rec2", new Variable("m_Rec2", 0, "CTable", false));
+		vars.set("m_RecNr", new Variable("m_RecNr", 0, "int", false));
+		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int", false));
+		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "CString", false));
+		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "CString", false));
+		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int", false));
+		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL", false));
+		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int", false));
 
-		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString"));
-		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString"));
-		vars.set("STRING_QUOTE", new Variable("STRING_QUOTE", 0, "CString"));
-		vars.set("STRING_SLASH1", new Variable("STRING_SLASH1", 0, "CString"));
-		vars.set("STRING_SLASH2", new Variable("STRING_SLASH2", 0, "CString"));
-		vars.set("STRING_BACKSLASH1", new Variable("STRING_BACKSLASH1", 0, "CString"));
-		vars.set("STRING_PARENTHESISOPEN", new Variable("STRING_PARENTHESISOPEN", 0, "CString"));
-		vars.set("STRING_PARENTHESISCLOSE", new Variable("STRING_PARENTHESISCLOSE", 0, "CString"));
-		vars.set("STRING_LINEFEED", new Variable("STRING_LINEFEED", 0, "CString"));
-		vars.set("STRING_BRACKETOPEN", new Variable("STRING_BRACKETOPEN", 0, "CString"));
-		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString"));
-		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString"));
-		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString"));
+		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString", false));
+		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString", false));
+		vars.set("STRING_QUOTE", new Variable("STRING_QUOTE", 0, "CString", false));
+		vars.set("STRING_SLASH1", new Variable("STRING_SLASH1", 0, "CString", false));
+		vars.set("STRING_SLASH2", new Variable("STRING_SLASH2", 0, "CString", false));
+		vars.set("STRING_BACKSLASH1", new Variable("STRING_BACKSLASH1", 0, "CString", false));
+		vars.set("STRING_PARENTHESISOPEN", new Variable("STRING_PARENTHESISOPEN", 0, "CString", false));
+		vars.set("STRING_PARENTHESISCLOSE", new Variable("STRING_PARENTHESISCLOSE", 0, "CString", false));
+		vars.set("STRING_LINEFEED", new Variable("STRING_LINEFEED", 0, "CString", false));
+		vars.set("STRING_BRACKETOPEN", new Variable("STRING_BRACKETOPEN", 0, "CString", false));
+		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString", false));
+		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString", false));
+		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString", false));
 
-		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "CString"));
-		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "CString"));
-		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "CString"));
-		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "CString"));
-		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "CString"));
-		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "CString"));
-		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "CString"));
-		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "CString"));
-		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "CString"));
-		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "CString"));
-		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "CString"));
-		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "CString"));
+		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "CString", false));
+		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "CString", false));
+		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "CString", false));
+		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "CString", false));
+		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "CString", false));
+		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "CString", false));
+		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "CString", false));
+		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "CString", false));
+		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "CString", false));
+		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "CString", false));
+		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "CString", false));
+		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "CString", false));
 
-		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "CString"));
-		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "CString"));
-		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "CString"));
-		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "CString"));
-		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "CString"));
-		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "CString"));
-		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "CString"));
-		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString"));
-		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString"));
-		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "CString"));
+		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "CString", false));
+		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "CString", false));
+		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "CString", false));
+		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "CString", false));
+		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "CString", false));
+		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "CString", false));
+		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "CString", false));
+		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString", false));
+		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString", false));
+		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "CString", false));
 	}
 
-	processTokens(_NotManagedDocs :Map<string, TextDocument>, tokens :Token[], script :Script, definedVariables_ :Map<string, Variable>[]|null = null, definedFunctions_ :string[][]|null = null, scopeLevel_ :number|null = null, isIncludescript :boolean = false) :ScriptInformation {
+	processTokens(_NotManagedDocs :Map<string, TextDocument>,
+					tokens :Token[],
+					script :Script,
+					definedVariables_ :Map<string, Variable>[]|null = null,
+					definedFunctions_ :string[][]|null = null,
+					scopeLevel_ :number|null = null,
+					isIncludescript :boolean = false) :ScriptInformation {
+
 		let diag :Diagnostic[] = [];
 
 		let found = script.m_scripttext.search(/#includescript\s+[0-9]+\b/);
@@ -376,7 +409,7 @@ export class CParser {
 											this.addError("Another parameter is already named like this `"+tokens[j].m_Text+"`", diag, doc, scriptPos, tokens[j], isIncludescript);
 											break;
 										} else {
-											definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText));	
+											definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, isIncludescript, tokens[j]));	
 										}
 									} else {
 										if(!this.IsVariable(tokens[j].m_Text)) {
@@ -387,7 +420,7 @@ export class CParser {
 											this.addError("Another parameter is already named like this `"+tokens[j].m_Text+"`", diag, doc, scriptPos, tokens[j], isIncludescript);
 											break;
 										} else {
-											definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText));	
+											definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, isIncludescript, tokens[j]));	
 										}
 									}
 									
@@ -535,7 +568,7 @@ export class CParser {
 										type = "double";
 									} 
 
-									newScope.set(val, new Variable(val, scopeLevel, type));
+									newScope.set(val, new Variable(val, scopeLevel, type, isIncludescript));
 								});
 								variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 							}
@@ -561,7 +594,7 @@ export class CParser {
 									type = "double";
 								} 
 
-								newScope.set(val, new Variable(val, scopeLevel, type));
+								newScope.set(val, new Variable(val, scopeLevel, type, isIncludescript));
 							});
 							variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 						}
@@ -684,12 +717,12 @@ export class CParser {
 							}
 
 							if(variable) {
-								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
+								this.addError("shadowing of variable `" + nextIdent + "` detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Hint);
 							}
 							else if(definedVariables[scopeLevel].get(nextIdent)) {
 								this.addError("Redefining variable `" + nextIdent + "`" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
 							}
-							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText));
+							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText, isIncludescript, secondToken));
 							
 							// completly new expression-tree must be analysed
 
@@ -790,7 +823,7 @@ export class CParser {
 				else if(currentTokenText == "__ADDHOOK__") {
 					let secondToken = this.getToken(tokens, i + 1);
 					let thirdToken = this.getToken(tokens, i + 2);
-
+					this.addError("Hook detected, maybe a customer uses this hook", diag, doc, scriptPos, thirdToken, isIncludescript, DiagnosticSeverity.Warning, 500);
 					for(let x = 0; x < script.m_HooksForDocument.length; x++) {
 						if(script.m_HooksForDocument[x].m_ScriptName == thirdToken.m_Text) {
 							this.ParseText(_NotManagedDocs, script.m_HooksForDocument[x], isIncludescript, definedVariables, definedFunctions, scopeLevel);
@@ -799,7 +832,7 @@ export class CParser {
 					}
 					
 
-					i += 1;
+					i += 2;
 				}
 				else {
 					if(this.IsVariable(currentTokenText)) {
@@ -820,6 +853,8 @@ export class CParser {
 							}
 							this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, currentToken, isIncludescript, severity);
 							//i += 2;
+						} else {
+							variable.used();
 						}
 
 						if(variable && scopeLevel < variable.m_Scope) {
@@ -858,7 +893,7 @@ export class CParser {
 			}
 			if(tokens.length >= 2) {
 				if(tokens[tokens.length - 1].m_Text != ";") {
-					this.addError("`;` expected at the end of the script", diag, doc, scriptPos, tokens[tokens.length - 1], isIncludescript);	
+					//this.addError("`;` expected at the end of the script", diag, doc, scriptPos, tokens[tokens.length - 1], isIncludescript);	
 				}
 			}
 
@@ -867,6 +902,18 @@ export class CParser {
 				this.addError("`;` expected at the end of the script", diag, doc, scriptPos, token, isIncludescript);	
 			}
 		}
+
+		// if(!isIncludescript && !script.m_MainScript) {
+		// 	for(let x = 0; x < definedVariables.length; x++) {
+		// 		definedVariables[x].forEach((value, key) => {
+		// 			if(!value.m_IsUsed && value.m_Token && !value.m_IsInIncludescript) {
+		// 				this.addError("Variable `"+value.m_Name+"` is defined but never used", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000);
+		// 			}
+		// 		})
+	
+		// 	}
+		// }
+
 		return { m_diagnostics: diag,
 			m_definedFunctions: definedFunctions,
 			m_definedVariables: definedVariables,

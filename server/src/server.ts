@@ -111,7 +111,7 @@ connection.onInitialized(() => {
 			connection.console.log('Workspace folder change event received.');
 		});
 	}
-	
+
 	documentSettings.clear();
 	GlobalManager.clear();
 	connection.sendNotification("custom/getFilenames");
@@ -324,6 +324,9 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 }
 
 connection.onDidChangeWatchedFiles(_change => {
+
+	connection.sendNotification("custom/getParserXML");
+
 	// Monitored files have change in VSCode
 	console.log('We received an file change event');
 

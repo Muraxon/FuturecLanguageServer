@@ -132,6 +132,36 @@ export class ParserFunctions {
 	}
 
 	async buildFunctions(uri :string, root_path :string) {
+		this.m_CompletionItemDialog = [];
+		this.m_CompletionItemDatabase = [];
+		this.m_CompletionItemPrinter = [];
+		this.m_CompletionItemFile = [];
+		this.m_CompletionItemHelper = [];
+		this.m_CompletionItemCString = [];
+		this.m_CompletionItemTable = [];
+		this.m_CompletionItemCMoney = [];
+		this.m_CompletionItemCDateTime = [];
+		this.m_CompletionItemConstants = [];
+
+		this.m_FunctionHoverStringsDialog = new Map();
+		this.m_FunctionHoverStringsDatabase = new Map();
+		this.m_FunctionHoverStringsPrinter = new Map();
+		this.m_FunctionHoverStringsFile = new Map();
+		this.m_FunctionHoverStringsHelper = new Map();
+		this.m_FunctionHoverStringsCString = new Map();
+		this.m_FunctionHoverStringsTable = new Map();
+		this.m_FunctionHoverStringsCMoney = new Map();
+		this.m_FunctionHoverStringsCDateTime = new Map();
+		this.m_FunctionHoverStringsConstants = new Map();
+		this.m_FunctionSignatureMapDialog = new Map();
+		this.m_FunctionSignatureMapDatabase = new Map();
+		this.m_FunctionSignatureMapPrinter = new Map();
+		this.m_FunctionSignatureMapFile = new Map();
+		this.m_FunctionSignatureMapHelper = new Map();
+		this.m_FunctionSignatureMapCString = new Map();
+		this.m_FunctionSignatureMapTable = new Map();
+		this.m_FunctionSignatureMapCMoney = new Map();
+		this.m_FunctionSignatureMapCDateTime = new Map();
 
 		try {
 

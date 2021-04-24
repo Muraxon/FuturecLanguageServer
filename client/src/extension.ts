@@ -21,7 +21,9 @@ import { workspace,
 	ProgressLocation,
 	Selection,
 	DocumentLink,
-	TextEdit
+	TextEdit,
+	Diagnostic,
+	ThemeColor
 } from 'vscode';
 
 import {
@@ -42,16 +44,14 @@ let lastPos: Position | null = null;
 let resimportattributes = workspace.findFiles("**/*importattributes*");
 
 let docDecoration = window.createTextEditorDecorationType({
-	after: {
-		margin: "0 0 0 3em",
-		fontStyle: "italic",
-		fontWeight: "lighter",
-		color: "grey"
-	}
+	color: "grey"
+})
+
+let docDecoration2 = window.createTextEditorDecorationType({
+	color: "#4EC9B0"
 })
 
 export function activate(context: ExtensionContext) {
-
 	// The server is implemented in node
 	let serverModule = context.asAbsolutePath(
 		path.join('server', 'out', 'server.js')
@@ -78,10 +78,25 @@ export function activate(context: ExtensionContext) {
 		documentSelector: [{ scheme: 'file', language: 'futurec'}],
 		synchronize: {
 			// Notify the server about file changes to '.clientrc files contained in the workspace
-			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+			fileEvents: workspace.createFileSystemWatcher("**/scriptautocompletedefs.json")
 		},
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
+			handleDiagnostics: (uri, diag, next) => {
+				let diag_temp :Diagnostic[] = [];
+				let diag_temp2 :Diagnostic[] = [];
+				for(let x = 0; x < diag.length; x++) {
+					if(diag[x].code == 1000) {
+						diag_temp.push(diag[x]);
+					}
+					if(diag[x].code == 500) {
+						diag_temp2.push(diag[x]);
+					}
+				}
+				window.activeTextEditor.setDecorations(docDecoration ,diag_temp);
+				window.activeTextEditor.setDecorations(docDecoration2 ,diag_temp2);
+				next(uri, diag);
+			},
 			provideCompletionItem: async (doc, pos, context) => {
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = "";
