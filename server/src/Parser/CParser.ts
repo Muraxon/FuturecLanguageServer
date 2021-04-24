@@ -1,4 +1,4 @@
-import { Diagnostic, DiagnosticSeverity, Position, TextDocument } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, Position, SignatureInformation, TextDocument } from 'vscode-languageserver';
 import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { Script } from '../Script';
 import { GlobalAnalyzer, parserFunctions } from '../server';
@@ -915,8 +915,9 @@ export class CParser {
 							if(!this.IsVariable(thirdToken.m_Text)) {
 								this.addError("after . must follow an Parserfunction", diag, doc, scriptPos, thirdToken, isIncludescript);
 							} else {
+								let func :SignatureInformation|undefined = undefined;
 								if(variable && parserFunctions) {
-									let func = parserFunctions.getSignature(new CursorPositionInformation(thirdToken.m_Text, "", CursorPositionType.VARIABLE, variable.m_Type, 0))
+									func = parserFunctions.getSignature(new CursorPositionInformation(thirdToken.m_Text, "", CursorPositionType.VARIABLE, variable.m_Type, 0))
 									if(!func) {
 										this.addError("Function `"+thirdToken.m_Text+"` is not a parserfunction from instance `"+variable.m_Name+"` of type `"+variable.m_Type+"`", diag, doc, scriptPos, thirdToken, isIncludescript);
 									}
@@ -925,6 +926,8 @@ export class CParser {
 								let fourthToken = this.getToken(tokens,i + 3);
 								if(fourthToken.m_Text != "(") {
 									this.addError("after Parserfunction must follow an Paranthesis", diag, doc, scriptPos, fourthToken, isIncludescript);
+								} else {
+								
 								}
 							}
 							i += 3;

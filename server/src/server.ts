@@ -504,7 +504,7 @@ connection.onCodeLens(async (params, token):Promise<CodeLens[]> => {
 							title:"Hook suchen",
 							command: "workbench.action.findInFiles",
 							arguments: [{
-								query: m[1],
+								query: "INSERTINTOSCRIPT:" + script.m_scriptnumber.toString() + "," + m[1],
 								triggerSearch: true,
 								preserveCase: true,
 								useExcludeSettingsAndIgnoreFiles: true,
