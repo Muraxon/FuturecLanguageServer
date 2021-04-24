@@ -166,8 +166,22 @@ export class CParser {
 					continue;
 				}
 			}
-			
-			if(char.match(/[a-zA-Z_öäüÖÄÜß0-9]/)) {
+			if(char == "\"") {
+				if(startOfIdentifier < 0) { startOfIdentifier = pos; }
+				pos++;
+				let charBefore = char;
+				char = text.charAt(pos);
+				while(pos < text.length && char != "\"" || (char == "\"" && charBefore == "\\")) {
+					charBefore = char;
+					char = text.charAt(pos);
+					pos++;
+				}
+				let token = new Token(text.substring(startOfIdentifier, pos), {start: startOfIdentifier, end: pos});
+				
+				tokens.push(token);
+				startOfIdentifier = -1;
+			}
+			else if(char.match(/[a-zA-Z_öäüÖÄÜß0-9]/)) {
 				if(startOfIdentifier < 0) { startOfIdentifier = pos; }
 			}
 			else if(char.match(/[^a-zA-Z_öäüÖÄÜß0-9]/)) {
@@ -282,32 +296,32 @@ export class CParser {
 		vars.set("STRING_RAUTE", new Variable("STRING_RAUTE", 0, "CString", false));
 		vars.set("STRING_CARRIAGERETURN", new Variable("STRING_CARRIAGERETURN", 0, "CString", false));
 
-		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "CString", false));
-		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "CString", false));
-		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "CString", false));
-		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "CString", false));
-		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "CString", false));
-		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "CString", false));
-		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "CString", false));
-		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "CString", false));
-		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "CString", false));
-		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "CString", false));
-		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "CString", false));
-		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "CString", false));
+		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "int", false));
+		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "int", false));
+		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "int", false));
+		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "int", false));
+		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "int", false));
+		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "int", false));
+		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "int", false));
+		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "int", false));
+		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "int", false));
+		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "int", false));
+		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "int", false));
+		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "int", false));
 
-		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "CString", false));
-		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "CString", false));
-		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "CString", false));
-		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "CString", false));
-		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "CString", false));
-		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "CString", false));
-		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "CString", false));
-		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "CString", false));
-		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "CString", false));
-		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "CString", false));
-		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "CString", false));
-		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "CString", false));
-		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "CString", false));
+		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "int", false));
+		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "int", false));
+		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "int", false));
+		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "int", false));
+		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "int", false));
+		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "int", false));
+		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "int", false));
+		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "int", false));
+		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "int", false));
+		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "int", false));
+		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "int", false));
+		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "int", false));
+		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "int", false));
 	}
 
 	processTokens(_NotManagedDocs :Map<string, TextDocument>,
@@ -345,7 +359,6 @@ export class CParser {
 			definedFunctions.push([]);
 		}
 
-		let bIsInsideString = false;
 		let scopeLevel = 0;
 		if(scopeLevel_) {
 			scopeLevel = scopeLevel_;
@@ -365,12 +378,9 @@ export class CParser {
 			for(let i = 0; i < tokens.length; i++) {
 				let currentToken = this.getToken(tokens,i);
 				let currentTokenText = currentToken.m_Text;
-				if(currentTokenText == "\"") {
-					bIsInsideString = !bIsInsideString;
+				if(currentTokenText.startsWith("\"")) {
 					continue;
 				}
-				
-				if(bIsInsideString) { continue; }
 				
 				if(currentTokenText == "ENDFUNCTION") {
 					let secondToken = this.getToken(tokens,i + 1);
@@ -782,8 +792,7 @@ export class CParser {
 								}
 							}
 						}
-					}
-					if(currentTokenText == "foreachrow" || currentTokenText == "foreachrowreverse") {
+					} else if(currentTokenText == "foreachrow" || currentTokenText == "foreachrowreverse") {
 						let secondToken = this.getToken(tokens,i + 1);
 						if(secondToken.m_Text == "(") {
 							let thirdToken = this.getToken(tokens,i + 2);
@@ -954,16 +963,16 @@ export class CParser {
 			}
 		}
 
-		// if(!isIncludescript && !script.m_MainScript) {
-		// 	for(let x = 0; x < definedVariables.length; x++) {
-		// 		definedVariables[x].forEach((value, key) => {
-		// 			if(!value.m_IsUsed && value.m_Token && !value.m_IsInIncludescript) {
-		// 				this.addError("Variable `"+value.m_Name+"` is defined but never used", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000);
-		// 			}
-		// 		})
+		if(!isIncludescript && !script.m_MainScript) {
+			for(let x = 0; x < definedVariables.length; x++) {
+				definedVariables[x].forEach((value, key) => {
+					if(!value.m_IsUsed && value.m_Token && !value.m_IsInIncludescript) {
+						this.addError("`"+value.m_Name+"` is declared but its value is never read", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000);
+					}
+				})
 	
-		// 	}
-		// }
+			}
+		}
 
 		return { m_diagnostics: diag,
 			m_definedFunctions: definedFunctions,

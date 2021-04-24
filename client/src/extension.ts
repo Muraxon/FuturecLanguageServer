@@ -219,7 +219,7 @@ export function activate(context: ExtensionContext) {
 			});
 		})
 
-		client.onNotification("custom/getCursorPos", async () => {
+		client.onNotification("custom/getCursorPos", () => {
 			client.sendNotification("custom/sendCursorPos", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
 			client.sendNotification("custom/sendCursorPosReturn", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
 		})
@@ -710,6 +710,7 @@ export function activate(context: ExtensionContext) {
 
 	}));
 
+
 	//
 	// Start the client. This will also launch the server
 	client.start();
@@ -722,3 +723,4 @@ export function deactivate(): Thenable<void> | undefined {
 	}
 	return client.stop();
 }
+
