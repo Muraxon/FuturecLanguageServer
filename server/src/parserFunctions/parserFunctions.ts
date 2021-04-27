@@ -7,10 +7,10 @@ import {
 	MarkupKind, 
 	SignatureInformation, 
 	ParameterInformation, 
-	TextEdit,
-	MarkupContent
-} from 'vscode-languageserver/node';
-import { URI } from 'vscode-uri';
+	MarkupContent, 
+	TextEdit
+} from 'vscode-languageserver';
+import { uriToFilePath } from 'vscode-languageserver/lib/files';
 import { CursorPositionInformation, } from './../CursorPositionInformation';
 
 export class ParserFunctions {
@@ -61,7 +61,7 @@ export class ParserFunctions {
 			let returnValue = "";
 			let returnValuePlain = "";
 			let signature = "";
-			let signaturePlain :Array<string> = [];
+			let signaturePlain = [];
 			let completionText = "";
 			for(let y in singleFunction) {
 				if(hoverString.length > 0 && y != "context") { hoverString = hoverString + "  \n"; }
@@ -103,7 +103,7 @@ export class ParserFunctions {
 			}
 
 			let paramInfo :ParameterInformation[] = [];
-			for(let x = 0; x < signaturePlain.length; x++) {
+			for(let x in signaturePlain) {
 				paramInfo.push({
 					label: signaturePlain[x],
 					documentation: {
@@ -115,13 +115,11 @@ export class ParserFunctions {
 
 			sigInfo = {
 				label: returnValuePlain + " " + functionName,
-				parameters: paramInfo
-			}
-			if(signaturePlain.length > 0) {
-				sigInfo.documentation =  { 
+				documentation: { 
 					kind: MarkupKind.Markdown,
 					value: signaturePlain.join("  \n") + "  \n___  \n" + notes
-				};
+				},
+				parameters: paramInfo
 			}
 
 			if(functionSignature) {
@@ -166,7 +164,8 @@ export class ParserFunctions {
 		this.m_FunctionSignatureMapCDateTime = new Map();
 
 		try {
-			let wholeFile = fs.readFileSync(URI.parse(uri).path.substr(1), "utf-8");
+
+			let wholeFile = fs.readFileSync(uriToFilePath(uri)!, "utf-8");
 		
 			let result = JSON.parse(wholeFile);
 

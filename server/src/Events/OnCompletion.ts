@@ -123,22 +123,22 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 		let ScriptInformation = parser.ParseText(docs, script, false);
 
 		let alreadyAdded :string[] = [];
-		// for(let x = 0; x < ScriptInformation.m_definedFunctions.length; x++) {
-		// 	for(let y = 0; y < ScriptInformation.m_definedFunctions[x].length; y++) {
-		// 		if(!alreadyAdded.find((vari) => {
-		// 			if(vari == ScriptInformation.m_definedFunctions[x][y]) {
-		// 				return true;
-		// 			}
-		// 		})) {
-		// 			alreadyAdded.push(ScriptInformation.m_definedFunctions[x][y]);
-		// 			completionCached.push({
-		// 				label: ScriptInformation.m_definedFunctions[x][y],
-		// 				kind: CompletionItemKind.Function
-		// 			})
-		// 		} 
+		for(let x = 0; x < ScriptInformation.m_definedFunctions.length; x++) {
+			for(let y = 0; y < ScriptInformation.m_definedFunctions[x].length; y++) {
+				if(!alreadyAdded.find((vari) => {
+					if(vari == ScriptInformation.m_definedFunctions[x][y]) {
+						return true;
+					}
+				})) {
+					alreadyAdded.push(ScriptInformation.m_definedFunctions[x][y]);
+					completionCached.push({
+						label: ScriptInformation.m_definedFunctions[x][y],
+						kind: CompletionItemKind.Function
+					})
+				} 
 
-		// 	}
-		// }
+			}
+		}
 
 		alreadyAdded = [];
 		for(let x = 0; x < ScriptInformation.m_definedVariables.length; x++) {

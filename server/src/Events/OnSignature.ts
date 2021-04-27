@@ -1,5 +1,4 @@
-import { Hover, SignatureHelp, ParameterInformation, SignatureInformation, MarkupContent, Position } from 'vscode-languageserver/node';
-import { TextDocument } from 'vscode-languageserver-textdocument';
+import { TextDocument, Hover, SignatureHelp, ParameterInformation, SignatureInformation, MarkupContent, Position } from 'vscode-languageserver';
 import { CParser } from '../Parser/CParser';
 import { TextParser } from '../TextParser';
 import { parserFunctions, GlobalAnalyzer } from './../server';
@@ -50,7 +49,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 
 			if(word.m_context.length <= 0) {
 
-				docs.forEach((value: TextDocument, key:string) => {
+				docs.forEach((value:TextDocument, key:string) => {
 					let pattern:RegExp = new RegExp("FUNCTION:\\s+(void|double|CString|int|BOOL|CTable|CMoney|CDateTime)\\s+" + foundFunction + "\\(.*\\)", "g");
 					
 					let DocumentText = value.getText();
