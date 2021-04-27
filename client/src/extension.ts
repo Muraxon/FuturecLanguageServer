@@ -94,8 +94,8 @@ export function activate(context: ExtensionContext) {
 				// 		diag_temp2.push(diag[x]);
 				// 	}
 				// }
-				window.activeTextEditor.setDecorations(docDecoration ,diag_temp);
-				window.activeTextEditor.setDecorations(docDecoration2 ,diag_temp2);
+				// window.activeTextEditor.setDecorations(docDecoration ,diag_temp);
+				// window.activeTextEditor.setDecorations(docDecoration2 ,diag_temp2);
 				next(uri, diag);
 			},
 			provideCompletionItem: async (doc, pos, context, token, next) => {
