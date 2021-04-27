@@ -1,5 +1,5 @@
-import { Diagnostic, Position, TextDocument, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments} from 'vscode-languageserver';
-import { Script } from './Script';
+import { Diagnostic, Position, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments} from 'vscode-languageserver';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CursorPositionInformation, CursorPositionType } from './CursorPositionInformation';
 
 export class TextParser {

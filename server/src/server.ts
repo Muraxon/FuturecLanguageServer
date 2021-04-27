@@ -6,7 +6,6 @@
 import {
 	createConnection,
 	TextDocuments,
-	TextDocument,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
@@ -24,8 +23,13 @@ import {
 	CodeActionKind,
 	CompletionParams,
 	CompletionList,
-	TextDocumentChangeEvent
-} from 'vscode-languageserver';
+	TextDocumentChangeEvent,
+	TextDocumentSyncKind
+} from 'vscode-languageserver/node';
+
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 import { Analyzer } from './analyzer';
 import { DocumentManager } from './DocumentManager';
@@ -43,11 +47,11 @@ export let parserFunctions :ParserFunctions = new ParserFunctions();
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
-let connection = createConnection(ProposedFeatures.all);
+const connection = createConnection(ProposedFeatures.all);
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
-let documents: TextDocuments = new TextDocuments();
+const documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = true;
@@ -57,13 +61,13 @@ export let GlobalAnalyzer = new Analyzer();
 let GlobalManager :DocumentManager = new DocumentManager();
 
 // Cache the settings of all open documents
-export let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
+export const documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 export let CurrentCompletionCharacter :string|undefined = undefined;
 
 
 connection.onInitialize((params: InitializeParams) => {
-	let capabilities = params.capabilities;
+	const capabilities = params.capabilities;
 	paramsimpl = params;
 	
 	// Does the client support the `workspace/configuration` request?
@@ -82,7 +86,7 @@ connection.onInitialize((params: InitializeParams) => {
 
 	return {
 		capabilities: {
-			textDocumentSync: documents.syncKind,
+			textDocumentSync: TextDocumentSyncKind.Full,
 			// Tell the client that the server supports code completion
 			completionProvider: {
 				resolveProvider: false,
@@ -186,7 +190,7 @@ documents.onDidOpen(e => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent((change :TextDocumentChangeEvent) => {
+documents.onDidChangeContent((change :TextDocumentChangeEvent<TextDocument>) => {
 	validateTextDocument(change.document);
 });
 
@@ -254,7 +258,7 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 });
 
 connection.onNotification("custom/GetDiagnostic", async (obj) => {
-	let settings = await documentSettings.get(obj.uri);
+	const settings = await documentSettings.get(obj.uri);
 
 	if(settings && settings.ShowDiagnosisOfCurrentScript) {
 		let doc = documents.get(obj.uri);
@@ -405,7 +409,7 @@ connection.onDefinition((param, token): Location[] => {
 });
 
 // This handler provides the initial list of the completion items.
-connection.onCompletion((param: CompletionParams, token): CompletionItem[] | CompletionList => {
+connection.onCompletion((param: CompletionParams, token): CompletionItem[] => {
 	// The pass parameter contains the position of the text document in
 	// which code complete got requested. For the example we ignore this
 	// info and always provide the same completion items.
@@ -528,20 +532,21 @@ connection.onDidOpenTextDocument((params) => {
 	// A text document got opened in VSCode.
 	// params.textDocument.uri uniquely identifies the document. For documents store on disk this is a file URI.
 	// params.textDocument.text the initial full content of the document.
-	connection.console.log(`${params.textDocument.uri} opened.`);
+	// console.log(params);
 });
 
 connection.onDidChangeTextDocument((params) => {
 	// The content of a text document did change in VSCode.
 	// params.textDocument.uri uniquely identifies the document.
 	// params.contentChanges describe the content changes to the document.
-	connection.console.log(`${params.textDocument.uri} changed: ${JSON.stringify(params.contentChanges)}`);
+	// console.log(params);
+	// console.log(params.contentChanges[0]);
 });
 
 connection.onDidCloseTextDocument((params) => {
 	// A text document got closed in VSCode.
 	// params.textDocument.uri uniquely identifies the document.
-	connection.console.log(`${params.textDocument.uri} closed.`);
+	// console.log(params);
 });
 
 

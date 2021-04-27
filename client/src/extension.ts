@@ -34,11 +34,11 @@ import {
 	TransportKind,
 	CompletionRequest,
 	CompletionItemKind
-} from 'vscode-languageclient';
+} from 'vscode-languageclient/node';
 
 
 export let client: LanguageClient;
-let x: SignatureHelp | null = null;
+let x: SignatureHelp|null = null;
 let lastPos: Position | null = null;
 
 let resimportattributes = workspace.findFiles("**/*importattributes*");
@@ -84,21 +84,21 @@ export function activate(context: ExtensionContext) {
 		middleware: {
 			handleDiagnostics: (uri, diag, next) => {
 
-				let diag_temp :Diagnostic[] = [];
-				let diag_temp2 :Diagnostic[] = [];
-				for(let x = 0; x < diag.length; x++) {
-					if(diag[x].code == 1000) {
-						diag_temp.push(diag[x]);
-					}
-					if(diag[x].code == 500) {
-						diag_temp2.push(diag[x]);
-					}
-				}
-				window.activeTextEditor.setDecorations(docDecoration ,diag_temp);
-				window.activeTextEditor.setDecorations(docDecoration2 ,diag_temp2);
+				// let diag_temp :Diagnostic[] = [];
+				// let diag_temp2 :Diagnostic[] = [];
+				// for(let x = 0; x < diag.length; x++) {
+				// 	if(diag[x].code == 1000) {
+				// 		diag_temp.push(diag[x]);
+				// 	}
+				// 	if(diag[x].code == 500) {
+				// 		diag_temp2.push(diag[x]);
+				// 	}
+				// }
+				// window.activeTextEditor.setDecorations(docDecoration ,diag_temp);
+				// window.activeTextEditor.setDecorations(docDecoration2 ,diag_temp2);
 				next(uri, diag);
 			},
-			provideCompletionItem: async (doc, pos, context) => {
+			provideCompletionItem: async (doc, pos, context, token, next) => {
 				let rangeAtPos = doc.getWordRangeAtPosition(pos);
 				let text = "";
 				if(rangeAtPos) {
@@ -112,37 +112,39 @@ export function activate(context: ExtensionContext) {
 					}
 				} else {
 
-					let t = client.code2ProtocolConverter.asCompletionParams(doc, pos, context);
-					let items = await client.sendRequest<CompletionItem[]>(CompletionRequest.type.method, t);
+					let items = <CompletionItem[]>await next(doc, pos, context, token);
 					let config = workspace.getConfiguration();
-					
 					let completion = config.get<string>("future_c.SignaturhilfeBeiParserfunktionen");
 
+					let newItems :CompletionItem[] = [];
+
 					items.forEach(element => {
-						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet)) {
+						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
 							if(completion == "Snippet") {
 								element.insertText = new SnippetString(element.insertText.toString());
 							} else if(completion == "Signatur") {
 								element.insertText = element.label;
 							}
 						}
+
+						newItems.push(element);
 					});
-					return new CompletionList(items, false);
+					return newItems;
 				}
 
-				return;
+				return null;
 			},
-			provideSignatureHelp: (doc, pos, token, next): ProviderResult<SignatureHelp> => {
+			provideSignatureHelp: async (doc, pos, token, cont, next): Promise<SignatureHelp> => {
 				if (!x || lastPos.line != pos.line) {
 					x = null;
-					let t = client.code2ProtocolConverter.asTextDocumentPositionParams(doc, pos);
-					let ret = client.sendRequest<SignatureHelp>("textDocument/signatureHelp", t);
+
 					lastPos = pos;
-					ret.then(value => {
-						x = value;
-					})
-					return ret;
+					let ret = await next(doc, pos, token, cont);
+					x = ret;
+					return x;
 				} else {
+					if(!x) { return; }
+
 					let line = doc.lineAt(pos);
 
 					let lineBeforeCursor = line.text.substring(0, pos.character);
@@ -165,14 +167,19 @@ export function activate(context: ExtensionContext) {
 							activeParam++;
 						}
 					}
-
+					
 					let exit = lineBeforeCursor.search(/\b[cC]all:.*\(.*\)/);
 					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
 					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
 					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
+
 					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (nBracePairs == 0) || (activeParam >= x.signatures[0].parameters.length)) {
 						x = null;
-						return;
+						return {
+							signatures: null,
+							activeParameter: 0,
+							activeSignature: 0
+						};
 					}
 
 					x = {
@@ -202,7 +209,7 @@ export function activate(context: ExtensionContext) {
 				files[i] = res[i].toString();
 			}
 
-			client.sendNotification("custom/sendFilename", [files]);
+			client.sendNotification("custom/sendFilename", files);
 		});
 
 		client.onNotification("custom/getParserXML", async () => {

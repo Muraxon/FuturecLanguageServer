@@ -1,5 +1,7 @@
-import { TextDocument, TextDocuments, Position } from 'vscode-languageserver';
-import { uriToFilePath } from 'vscode-languageserver/lib/files';
+import { TextDocuments, Position } from 'vscode-languageserver';
+import { TextDocument } from 'vscode-languageserver-textdocument';
+
+import { URI } from 'vscode-uri';
 import { readFileSync } from 'fs';
 
 export class DocumentManager {
@@ -33,7 +35,7 @@ export class DocumentManager {
 	addFromFile(...initDocs :string[]) {
 		initDocs.forEach(element => {
 			if(!this.m_Documents.has(element)) {
-				let wholeFile = readFileSync(uriToFilePath(element)!, "latin1");
+				let wholeFile = readFileSync(URI.parse(element).path.substr(1), "latin1");
 				let textDoc :TextDocument = TextDocument.create(element, "de", 1, wholeFile);
 
 				this.m_Documents.set(element, textDoc);
@@ -77,7 +79,7 @@ export class DocumentManager {
 		return this.m_Documents;
 	}
 
-	doWithDocuments<T extends Function, ReturnValue>(managedDocs :TextDocuments, curDoc :TextDocument, pos :Position, func :T) {
+	doWithDocuments<T extends Function, ReturnValue>(managedDocs :TextDocuments<TextDocument>, curDoc :TextDocument, pos :Position, func :T) {
 		this.startEvent(...managedDocs.all());
 		
 		let ret :ReturnValue = func(this.getDocuments(), curDoc, pos);	

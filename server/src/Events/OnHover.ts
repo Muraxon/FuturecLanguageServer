@@ -1,4 +1,5 @@
-import { TextDocument, Hover, Position } from 'vscode-languageserver';
+import { Hover, Position } from 'vscode-languageserver/node';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { TextParser } from '../TextParser';
 import { GlobalAnalyzer, parserFunctions } from '../server';
