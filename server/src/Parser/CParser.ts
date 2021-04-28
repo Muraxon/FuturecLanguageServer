@@ -58,8 +58,10 @@ export class CParser {
 		throw token[pos];
 	}
 
+	m_ErrorCount :number;
+
 	constructor() {
-		
+		this.m_ErrorCount = 0;	
 	}
 	isVariableDefined(variable :string, definedVariables_ :Map<string, Variable>[], scope :number) :Variable|undefined {
 		let j = 0;
@@ -169,15 +171,14 @@ export class CParser {
 			if(char == "\"") {
 				if(startOfIdentifier < 0) { startOfIdentifier = pos; }
 				pos++;
-				let charBefore = char;
 				char = text.charAt(pos);
 				if(char == "\"") {
 					let token = new Token(text.substring(startOfIdentifier, pos + 1), {start: startOfIdentifier, end: pos + 1});
 					tokens.push(token);
 				} else {
-					while(pos < text.length && char != "\"" || (char == "\"" && charBefore == "\\")) {
-						charBefore = char;
+					while(pos < text.length && char != "\"") {
 						char = text.charAt(pos);
+						if(char == "\\") { pos++; }
 						pos++;
 					}
 					let token = new Token(text.substring(startOfIdentifier, pos), {start: startOfIdentifier, end: pos});
@@ -209,6 +210,7 @@ export class CParser {
 
 	addError(text :string, diag :Diagnostic[], doc :TextDocument, scriptPos :Position, token :Token, isIncludescript :boolean, serverity :DiagnosticSeverity = DiagnosticSeverity.Error, code :number = 0) {
 		// do NOT add Errors when we parse tokens in an includescript
+		if(serverity == DiagnosticSeverity.Error) { this.m_ErrorCount++; }
 		if(isIncludescript) { return; }
 
 		let posEnd = doc.positionAt(token.m_Range.end);
@@ -374,7 +376,12 @@ export class CParser {
 		}
 
 		if(script.m_MainScript) {
+			let num = this.m_ErrorCount;
 			scopeLevel = this.ParseText(_NotManagedDocs, script.m_MainScript, true, definedVariables, definedFunctions, 0).m_ScopeLevel;
+			num -= this.m_ErrorCount;
+			if(num != 0) {
+				this.addError("Mainscript " + script.m_MainScript.m_scriptnumber + " has some errors/warnings in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, {m_Range: {end: 0, start: 0}, m_Text: ""}, isIncludescript, DiagnosticSeverity.Information);
+			}
 		} 
 
 		let savedScopeLevel :number[] = [];
@@ -799,7 +806,7 @@ export class CParser {
 						} else {
 							let variable = this.isVariableDefined(secondToken.m_Text, definedVariables, scopeLevel);
 							if(!variable) {
-								let errorText = "'"+currentTokenText+"' possibly not defined, maybe";
+								let errorText = "'"+secondToken.m_Text+"' possibly not defined, maybe";
 								let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
 								if(hasIncludescript) {
 									severity = DiagnosticSeverity.Information;
@@ -814,6 +821,7 @@ export class CParser {
 								}
 							}
 						}
+						i += 1;
 					} else if(currentTokenText == "foreachrow" || currentTokenText == "foreachrowreverse") {
 						let secondToken = this.getToken(tokens,i + 1);
 						if(secondToken.m_Text == "(") {
@@ -881,7 +889,12 @@ export class CParser {
 						}  else {
 							for (let x = 0; x < script.m_IncludeScript.length; x++) {
 								if(parseInt(number[1]) == script.m_IncludeScript[x].m_scriptnumber) {
+									let num = this.m_ErrorCount;
 									this.ParseText(_NotManagedDocs, script.m_IncludeScript[x], true, definedVariables, definedFunctions, scopeLevel);
+									num = num - this.m_ErrorCount;
+									if(num != 0) {
+										this.addError("includescript " + number[1] + " has some errors/warnings in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
+									}
 									break;
 								}								
 							}
