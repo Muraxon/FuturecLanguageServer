@@ -128,7 +128,7 @@ export function activate(context: ExtensionContext) {
 						}
 
 						newItems.push(element);
-					});
+					}); 
 					return newItems;
 				}
 
