@@ -117,7 +117,7 @@ export function activate(context: ExtensionContext) {
 					let completion = config.get<string>("future_c.SignaturhilfeBeiParserfunktionen");
 
 					let newItems :CompletionItem[] = [];
-
+					newItems = [];
 					items.forEach(element => {
 						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
 							if(completion == "Snippet") {
