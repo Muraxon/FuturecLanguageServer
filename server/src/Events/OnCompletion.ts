@@ -1,9 +1,13 @@
-import { TextDocument, CompletionItem, Position, CompletionItemKind, MarkupKind } from 'vscode-languageserver';
-import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter, getDocumentSettings } from '../server';
+import { CompletionItem, Position, CompletionItemKind, MarkupKind } from 'vscode-languageserver/node';
+import { GlobalAnalyzer, parserFunctions, CurrentCompletionCharacter } from '../server';
 import { TextParser } from "./../TextParser";
 import { Script } from '../Script';
 import { CursorPositionType, CursorPositionInformation } from '../CursorPositionInformation';
 import { CParser } from '../Parser/CParser';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
+
 
 
 let completionCached :CompletionItem[] = [];

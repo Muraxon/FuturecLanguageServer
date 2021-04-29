@@ -6,7 +6,6 @@
 import * as path from 'path';
 import { workspace, 
 	ExtensionContext, 
-	ProviderResult, 
 	SignatureHelp, 
 	Position, 
 	commands, 
@@ -15,29 +14,22 @@ import { workspace,
 	TextEditorRevealType, 
 	CompletionItem,
 	SnippetString,
-	CompletionList,
 	Range,
 	TextEditorEdit,
 	ProgressLocation,
-	Selection,
-	DocumentLink,
-	TextEdit,
-	Diagnostic,
-	ThemeColor
+	Selection
 } from 'vscode';
 
 import {
-
 	LanguageClient,
 	LanguageClientOptions,
 	ServerOptions,
 	TransportKind,
-	CompletionRequest,
 	CompletionItemKind
-} from 'vscode-languageclient';
+} from 'vscode-languageclient/node';
 
 
-export let client: LanguageClient;
+let client: LanguageClient;
 let x: SignatureHelp | null = null;
 let lastPos: Position | null = null;
 
@@ -82,6 +74,15 @@ export function activate(context: ExtensionContext) {
 		},
 		workspaceFolder: workspace.workspaceFolders[0],
 		middleware: {
+			provideHover: (doc, pos, token, next) => {
+				let config = workspace.getConfiguration();
+				let showHover = config.get<boolean>("future_c.ShowHovering");
+				if(showHover) {
+					return next(doc, pos, token);
+				} else {
+					return null;
+				}
+			},
 			handleDiagnostics: (uri, diag, next) => {
 
 				// let diag_temp :Diagnostic[] = [];
@@ -111,35 +112,43 @@ export function activate(context: ExtensionContext) {
 						commands.executeCommand("Show.columns", number);
 					}
 				} else {
-
 					let items = <CompletionItem[]>await next(doc, pos, context, token);
 					let config = workspace.getConfiguration();
 					let completion = config.get<string>("future_c.SignaturhilfeBeiParserfunktionen");
-
-					let newItems :CompletionItem[] = [];
-
-					items.forEach(element => {
-						if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
-							if(completion == "Snippet") {
-								element.insertText = new SnippetString(element.insertText.toString());
-							} else if(completion == "Signatur") {
-								element.insertText = element.label;
+					let autocompletion = config.get<boolean>("future_c.Autocompletion");
+					if(autocompletion) {
+						let newItems :CompletionItem[] = [];
+	
+						items.forEach(element => {
+							if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
+								if(completion == "Snippet") {
+									element.insertText = new SnippetString(element.insertText.toString());
+								} else if(completion == "Signatur") {
+									element.insertText = element.label;
+								}
 							}
-						}
-
-						newItems.push(element);
-					});
-					return newItems;
+	
+							newItems.push(element);
+						});
+						return newItems;
+					}
 				}
 
 				return null;
 			},
-			provideSignatureHelp: async (doc, pos, token, next) => {
+			provideSignatureHelp: async (doc, pos, context, token, next) => {
+				let config = workspace.getConfiguration();
+				let ShowSignatureOrSnippets = config.get<string>("future_c.ShowSignatureOrSnippets");
+				if(!ShowSignatureOrSnippets) {
+					x = null;
+					return null;
+				}
+
 				if (!x || lastPos.line != pos.line) {
 					x = null;
 
 					lastPos = pos;
-					let ret = await next(doc, pos, token);
+					let ret = await next(doc, pos, context, token);
 					x = ret;
 					return x;
 				} else {
@@ -175,11 +184,7 @@ export function activate(context: ExtensionContext) {
 
 					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (nBracePairs == 0) || (activeParam >= x.signatures[0].parameters.length)) {
 						x = null;
-						return {
-							signatures: null,
-							activeParameter: 0,
-							activeSignature: 0
-						};
+						return null;
 					}
 
 					x = {

@@ -1,7 +1,6 @@
-import { cachedDataVersionTag } from 'v8';
-import { Diagnostic, Position, TextDocument, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments, DiagnosticSeverity} from 'vscode-languageserver';
+import { Diagnostic, Position, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments, DiagnosticSeverity} from 'vscode-languageserver/node';
 import { Script } from './Script';
-import { TextParser } from './TextParser';
+import { TextDocument } from 'vscode-languageserver-textdocument';
 
 let cachedMainScript :Script|null = null;
 

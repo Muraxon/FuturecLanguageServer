@@ -1,7 +1,10 @@
-import { TextDocument, Hover, Position } from 'vscode-languageserver';
+import { Hover, Position } from 'vscode-languageserver/node';
 import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { TextParser } from '../TextParser';
 import { GlobalAnalyzer, parserFunctions } from '../server';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 
 export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :Hover {

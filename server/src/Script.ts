@@ -1,4 +1,4 @@
-import {  Position } from 'vscode-languageserver';
+import {  Position } from 'vscode-languageserver/node';
 
 export class Script {
 	public m_ScriptName :string;

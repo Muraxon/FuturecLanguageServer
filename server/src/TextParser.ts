@@ -1,6 +1,8 @@
-import { Diagnostic, Position, TextDocument, Location, ParameterInformation, SignatureInformation, MarkupContent, SignatureHelp, TextDocuments} from 'vscode-languageserver';
-import { Script } from './Script';
+import { Position } from 'vscode-languageserver/node';
 import { CursorPositionInformation, CursorPositionType } from './CursorPositionInformation';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 export class TextParser {
 	static getWordAtPosition(pos :Position, doc :TextDocument, functionCompletion :boolean = false) :CursorPositionInformation{

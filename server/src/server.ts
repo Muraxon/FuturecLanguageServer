@@ -6,7 +6,6 @@
 import {
 	createConnection,
 	TextDocuments,
-	TextDocument,
 	ProposedFeatures,
 	InitializeParams,
 	DidChangeConfigurationNotification,
@@ -24,8 +23,14 @@ import {
 	CodeActionKind,
 	CompletionParams,
 	CompletionList,
-	TextDocumentChangeEvent
-} from 'vscode-languageserver';
+	TextDocumentChangeEvent,
+	TextDocumentSyncKind
+} from 'vscode-languageserver/node';
+
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
+
 
 import { Analyzer } from './analyzer';
 import { DocumentManager } from './DocumentManager';
@@ -43,11 +48,11 @@ export let parserFunctions :ParserFunctions = new ParserFunctions();
 
 // Create a connection for the server. The connection uses Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
-let connection = createConnection(ProposedFeatures.all);
+let connection = createConnection(ProposedFeatures.all, );
 
 // Create a simple text document manager. The text document manager
 // supports full document sync only
-let documents: TextDocuments = new TextDocuments();
+let documents: TextDocuments<TextDocument> = new TextDocuments(TextDocument);
 
 let hasConfigurationCapability: boolean = false;
 let hasWorkspaceFolderCapability: boolean = true;
@@ -63,7 +68,7 @@ export let CurrentCompletionCharacter :string|undefined = undefined;
 
 
 connection.onInitialize((params: InitializeParams) => {
-	let capabilities = params.capabilities;
+	const capabilities = params.capabilities;
 	paramsimpl = params;
 	
 	// Does the client support the `workspace/configuration` request?
@@ -82,7 +87,7 @@ connection.onInitialize((params: InitializeParams) => {
 
 	return {
 		capabilities: {
-			textDocumentSync: documents.syncKind,
+			textDocumentSync: TextDocumentSyncKind.Full,
 			// Tell the client that the server supports code completion
 			completionProvider: {
 				resolveProvider: false,
@@ -186,7 +191,7 @@ documents.onDidOpen(e => {
 
 // The content of a text document has changed. This event is emitted
 // when the text document first opened or when its content has changed.
-documents.onDidChangeContent((change :TextDocumentChangeEvent) => {
+documents.onDidChangeContent((change :TextDocumentChangeEvent<TextDocument>) => {
 	validateTextDocument(change.document);
 });
 

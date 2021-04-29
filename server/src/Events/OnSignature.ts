@@ -1,7 +1,10 @@
-import { TextDocument, Hover, SignatureHelp, ParameterInformation, SignatureInformation, MarkupContent, Position } from 'vscode-languageserver';
+import { Hover, SignatureHelp, ParameterInformation, SignatureInformation, MarkupContent, Position } from 'vscode-languageserver/node';
 import { CParser } from '../Parser/CParser';
 import { TextParser } from '../TextParser';
 import { parserFunctions, GlobalAnalyzer } from './../server';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 
 export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) :SignatureHelp {

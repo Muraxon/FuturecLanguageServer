@@ -1,4 +1,7 @@
-import { TextDocument, Hover, Location, Position } from 'vscode-languageserver';
+import { Location, Position } from 'vscode-languageserver/node';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 
 export function OnDefinition(docs :Map<string, TextDocument>, pos :Position) : Location[] {

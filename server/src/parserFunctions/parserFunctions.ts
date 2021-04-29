@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import { uriToFilePath } from 'vscode-languageserver/lib/node/files';
 import { 
 	CompletionItem, 
 	CompletionItemKind, 
@@ -7,10 +8,8 @@ import {
 	MarkupKind, 
 	SignatureInformation, 
 	ParameterInformation, 
-	MarkupContent, 
 	TextEdit
-} from 'vscode-languageserver';
-import { uriToFilePath } from 'vscode-languageserver/lib/files';
+} from 'vscode-languageserver/node';
 import { CursorPositionInformation, } from './../CursorPositionInformation';
 
 export class ParserFunctions {

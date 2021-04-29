@@ -1,6 +1,9 @@
-import { TextDocument, Position, Location } from 'vscode-languageserver';
+import { Position, Location } from 'vscode-languageserver/node';
 import { TextParser } from '../TextParser';
 import { CursorPositionType } from '../CursorPositionInformation';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 
 export function OnReference(docs :Map<string, TextDocument>, curDoc :TextDocument, pos :Position) : Location[] {

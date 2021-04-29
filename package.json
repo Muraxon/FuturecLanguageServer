@@ -10,7 +10,7 @@
         "multi-root ready"
     ],
     "engines": {
-        "vscode": "^1.33.0"
+        "vscode": "^1.43.0"
     },
     "activationEvents": [
         "onLanguage:futurec"
@@ -56,6 +56,24 @@
                     "type": "boolean",
                     "default": true,
                     "description": "Wenn aktiviert werdem im Editor alle Warnings/Errors/Hints/Infos angezeigt"
+                },
+                "future_c.ShowHovering": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": false,
+                    "description": "Wenn aktiviert werdem im Editor Hoverings angezeigt"
+                },
+                "future_c.Autocompletion": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Wenn aktiviert wird im Editor Autocompletion aktiviert."
+                },
+                "future_c.ShowSignatureOrSnippets": {
+                    "scope": "application",
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Wenn aktiviert wird im Editor die Signatur oder Snippet als Parameter angezeigt."
                 }
             }
         },
@@ -158,18 +176,24 @@
         ]
     },
     "scripts": {
-        "vscode:prepublish": "cd client && npm run update-vscode && cd .. && npm run compile",
+        "vscode:prepublish": "npm run compile",
         "compile": "tsc -b",
         "watch": "tsc -b -w",
         "postinstall": "cd client && npm install && cd ../server && npm install && cd ..",
         "test": "sh ./scripts/e2e.sh"
     },
     "devDependencies": {
-        "@types/mocha": "^5.2.7",
-        "@types/node": "^12.11.7",
-        "tslint": "^5.16.0",
-        "typescript": "^3.6.4"
+        "@types/mocha": "^8.2.2",
+        "@types/node": "^12.12.0",
+        "@typescript-eslint/eslint-plugin": "^4.21.0",
+        "@typescript-eslint/parser": "^4.21.0",
+        "eslint": "^7.23.0",
+        "mocha": "^8.3.2",
+        "typescript": "^4.2.3"
     },
     "icon": "logo.png",
-    "dependencies": {}
+    "dependencies": {
+        "lru-cache": "^6.0.0",
+        "minimatch": "^3.0.4"
+    }
 }

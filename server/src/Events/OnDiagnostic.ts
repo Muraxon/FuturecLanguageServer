@@ -1,7 +1,9 @@
-import { TextDocument, Position, Diagnostic } from 'vscode-languageserver';
+import { Position, Diagnostic } from 'vscode-languageserver/node';
 import { CParser } from '../Parser/CParser';
 import { GlobalAnalyzer } from '../server';
-
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 
 let diagnosticCached :Diagnostic[] = [];
 let posCached :Position|null = null;

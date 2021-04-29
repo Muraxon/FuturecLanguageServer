@@ -1,4 +1,7 @@
-import { Diagnostic, DiagnosticSeverity, Position, SignatureInformation, TextDocument } from 'vscode-languageserver';
+import { Diagnostic, DiagnosticSeverity, Position, SignatureInformation } from 'vscode-languageserver/node';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
 import { CursorPositionInformation, CursorPositionType } from '../CursorPositionInformation';
 import { Script } from '../Script';
 import { GlobalAnalyzer, parserFunctions } from '../server';

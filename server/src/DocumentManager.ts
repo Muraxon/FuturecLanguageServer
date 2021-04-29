@@ -1,6 +1,9 @@
-import { TextDocument, TextDocuments, Position } from 'vscode-languageserver';
-import { uriToFilePath } from 'vscode-languageserver/lib/files';
+import { TextDocuments, Position } from 'vscode-languageserver/node';
 import { readFileSync } from 'fs';
+import {
+	TextDocument
+} from 'vscode-languageserver-textdocument';
+import { uriToFilePath } from 'vscode-languageserver/lib/node/files';
 
 export class DocumentManager {
 
@@ -77,7 +80,7 @@ export class DocumentManager {
 		return this.m_Documents;
 	}
 
-	doWithDocuments<T extends Function, ReturnValue>(managedDocs :TextDocuments, curDoc :TextDocument, pos :Position, func :T) {
+	doWithDocuments<T extends Function, ReturnValue>(managedDocs :TextDocuments<TextDocument>, curDoc :TextDocument, pos :Position, func :T) {
 		this.startEvent(...managedDocs.all());
 		
 		let ret :ReturnValue = func(this.getDocuments(), curDoc, pos);	
