@@ -266,7 +266,7 @@ export function activate(context: ExtensionContext) {
 		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
 		let uri = window.activeTextEditor.document.uri;
 
-		client.sendNotification("custom/GetDiagnostic", {pos: pos, uri: uri.toString()});
+		client.sendNotification("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
 	}));
 
 	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
@@ -283,8 +283,6 @@ export function activate(context: ExtensionContext) {
 			}
 		});
 	}));
-
-	
 
 	context.subscriptions.push(commands.registerCommand("create.hook", async () => {
 		

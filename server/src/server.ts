@@ -38,6 +38,7 @@ import { OnSignature } from './Events/OnSignature';
 import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 import { TextParser } from './TextParser';
+import { OnDiagnosticForAllScripts } from './Events/OnDiagnosticAllFiles';
 
 export let parserFunctions :ParserFunctions = new ParserFunctions();
 
@@ -253,13 +254,13 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 	};
 });
 
-connection.onNotification("custom/GetDiagnostic", async (obj) => {
+connection.onNotification("custom/GetDiagnosticsForAllScripts", async (obj) => {
 	let settings = await documentSettings.get(obj.uri);
 
 	if(settings && settings.ShowDiagnosisOfCurrentScript) {
 		let doc = documents.get(obj.uri);
 		if(doc) {
-			let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnostic);
+			let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnosticForAllScripts);
 			connection.sendDiagnostics({
 				diagnostics: diag,
 				uri: obj.uri
