@@ -342,22 +342,22 @@ export class Analyzer {
 		}
 	}
 
-	getAllScripts(doc :TextDocument) :String[] {
+	getAllScripts(doc :TextDocument) :Script[] {
 		let m :RegExpExecArray | null;
 		let mEnd :RegExpExecArray | null;
-		let pattern = /^\s*(SCRIPT|INSERTINTOSCRIPT):[0-9]+.*$/gm;
+		let pattern = /^\s*(SCRIPT|INSERTINTOSCRIPT):([0-9]+)(.*)$/gm;
 		let patternEndScript = /^\s*ENDSCRIPT.*$/gm;
 
-		let AllScripts : String[] = new Array();
+		let AllScripts : Script[] = new Array();
 		let text = doc.getText();
 
 		while(m = pattern.exec(text)) {
+			let ind = text.indexOf("\n", m.index + 4);
+			m.index = ind;
 			patternEndScript.lastIndex = m.index;
 			mEnd = patternEndScript.exec(text);
 			if(mEnd) {
-				AllScripts.push(text.substr(m.index, mEnd.index - m.index));
-			} else {
-				AllScripts.push(text.substr(m.index));
+				AllScripts.push(new Script(text.substr(m.index, mEnd.index - m.index), parseInt(m[2]), doc.positionAt(m.index), doc.uri, m[1], m[3]));
 			}
 		}
 

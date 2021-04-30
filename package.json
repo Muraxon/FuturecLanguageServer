@@ -21,6 +21,20 @@
     },
     "main": "./client/out/extension",
     "contributes": {
+        "menus": {
+            "editor/context": [
+              {
+                "when": "editorFocus",
+                "command": "Check.Skript.Syntax",
+                "group": "navigation"
+              }
+            ],
+            "editor/title": [{
+                "command": "Check.Skript.Syntax",
+                "group": "navigation",
+                "when": "editorFocus"
+            }]
+          },
         "configuration": {
             "type": "object",
             "title": "Future C",
