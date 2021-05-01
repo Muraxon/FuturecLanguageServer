@@ -237,7 +237,7 @@ export class CParser {
 	}
 
 	IsType(text :string) {
-		if(text == "BYTE" || text == "BOOL" || text == "void" || text == "CTable" || text == "CMoney" || text == "CDateTime" || text == "CString" || text == "int" || text == "double") {
+		if(text == "short" || text == "BYTE" || text == "BOOL" || text == "void" || text == "CTable" || text == "CMoney" || text == "CDateTime" || text == "CString" || text == "int" || text == "double") {
 			return true;
 		}
 		return false;
@@ -290,6 +290,7 @@ export class CParser {
 		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int"));
 		vars.set("m_tSelectionTable", new Variable("m_tSelectionTable", 0, "CTable"));
 		vars.set("m_nUnitTestID", new Variable("m_nUnitTestID", 0, "int"));
+		vars.set("m_tFilterStateVars", new Variable("m_tFilterStateVars", 0, "CTable"));
 		vars.set("mstrUnitTestResult1", new Variable("mstrUnitTestResult1", 0, "CTable"));
 		vars.set("mstrUnitTestResult2", new Variable("mstrUnitTestResult2", 0, "CTable"));
 		vars.set("mstrUnitTestResult3", new Variable("mstrUnitTestResult3", 0, "CTable"));
@@ -333,6 +334,9 @@ export class CParser {
 		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "int"));
 		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "int"));
 		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "int"));
+
+		vars.set("WEIGHT_NORMAL", new Variable("WEIGHT_NORMAL", 0, "int"));
+		vars.set("PAGE_PORTRAIT", new Variable("PAGE_PORTRAIT", 0, "int"));
 	}
 
 	processTokens(_NotManagedDocs :Map<string, TextDocument>,
@@ -380,7 +384,7 @@ export class CParser {
 			scopeLevel = this.ParseText(_NotManagedDocs, script.m_MainScript, true, definedVariables, definedFunctions, 0).m_ScopeLevel;
 			num -= this.m_ErrorCount;
 			if(num != 0) {
-				this.addError("Mainscript " + script.m_MainScript.m_scriptnumber + " has some errors/warnings in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, {m_Range: {end: 0, start: 0}, m_Text: ""}, isIncludescript, DiagnosticSeverity.Information);
+				this.addError("Mainscript " + script.m_MainScript.m_scriptnumber + " has some errors in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, {m_Range: {end: 0, start: 0}, m_Text: ""}, isIncludescript, DiagnosticSeverity.Information);
 			}
 		} 
 
@@ -933,7 +937,7 @@ export class CParser {
 									this.ParseText(_NotManagedDocs, script.m_IncludeScript[x], true, definedVariables, definedFunctions, scopeLevel);
 									num = num - this.m_ErrorCount;
 									if(num != 0) {
-										this.addError("includescript " + number[1] + " has some errors/warnings in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
+										this.addError("includescript " + number[1] + " has some errors in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
 									}
 									break;
 								}								

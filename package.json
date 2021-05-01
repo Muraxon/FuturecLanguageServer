@@ -23,18 +23,20 @@
     "contributes": {
         "menus": {
             "editor/context": [
-              {
-                "when": "editorFocus && editorLangId == futurec",
-                "command": "Check.Skript.Syntax",
-                "group": "navigation"
-              }
+                {
+                    "when": "editorFocus && editorLangId == futurec",
+                    "command": "Check.Skript.Syntax",
+                    "group": "navigation"
+                }
             ],
-            "editor/title": [{
-                "command": "Check.Skript.Syntax",
-                "group": "navigation",
-                "when": "editorFocus && editorLangId == futurec"
-            }]
-          },
+            "editor/title": [
+                {
+                    "command": "Check.Skript.Syntax",
+                    "group": "navigation",
+                    "when": "editorFocus && editorLangId == futurec"
+                }
+            ]
+        },
         "configuration": {
             "type": "object",
             "title": "Future C",
@@ -173,19 +175,23 @@
         "commands": [
             {
                 "command": "Check.Skript.Syntax",
-                "title": "Check Skript Syntax"
+                "title": "Check Skript Syntax",
+                "enablement": "editorFocus && editorLangId == futurec"
             },
             {
                 "command": "jump.to.start.of.script",
-                "title": "Jump to start of script"
+                "title": "Jump to start of script",
+                "enablement": "editorFocus && editorLangId == futurec"
             },
             {
                 "command": "create.hook",
-                "title": "Hook erstellen"
+                "title": "Hook erstellen",
+                "enablement": "editorFocus && editorLangId == futurec"
             },
             {
                 "command": "create.script",
-                "title": "Skript erstellen"
+                "title": "Skript erstellen",
+                "enablement": "editorFocus && editorLangId == futurec"
             }
         ]
     },

@@ -342,7 +342,7 @@ export class Analyzer {
 		}
 	}
 
-	getAllScripts(doc :TextDocument) :Script[] {
+	getAllScripts(doc :TextDocument, notManagedDocs :Map<string, TextDocument>) :Script[] {
 		let m :RegExpExecArray | null;
 		let mEnd :RegExpExecArray | null;
 		let pattern = /^\s*(SCRIPT|INSERTINTOSCRIPT):([0-9]+)(.*)$/gm;
@@ -358,6 +358,8 @@ export class Analyzer {
 			mEnd = patternEndScript.exec(text);
 			if(mEnd) {
 				AllScripts.push(new Script(text.substr(m.index, mEnd.index - m.index), parseInt(m[2]), doc.positionAt(m.index), doc.uri, m[1], m[3]));
+				
+				this.getIncludeScriptForCurrentScript(AllScripts[AllScripts.length - 1], notManagedDocs, false);
 			}
 		}
 

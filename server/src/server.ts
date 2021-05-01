@@ -259,7 +259,7 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 	};
 });
 
-connection.onNotification("custom/GetDiagnosticsForAllScripts", async (obj) => {
+connection.onRequest("custom/GetDiagnosticsForAllScripts", async (obj) => {
 	let settings = await documentSettings.get(obj.uri);
 
 	if(settings && settings.ShowDiagnosisOfCurrentScript) {
@@ -274,6 +274,7 @@ connection.onNotification("custom/GetDiagnosticsForAllScripts", async (obj) => {
 	} else {
 		connection.sendDiagnostics({uri: obj.uri, diagnostics: []})
 	}
+	return 1;
 });
 
 connection.onNotification("custom/sendFilename", (uris: string[]) => {

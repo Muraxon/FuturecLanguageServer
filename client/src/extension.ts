@@ -265,7 +265,13 @@ export function activate(context: ExtensionContext) {
 		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
 		let uri = window.activeTextEditor.document.uri;
 
-		client.sendNotification("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
+		window.withProgress({location: ProgressLocation.Notification, cancellable: false}, (progress, token) => {
+			progress.report({
+				message: "Scriptcheck in progress. This may take a while."
+			});
+			return client.sendRequest("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
+		});
+		
 	}));
 
 	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
