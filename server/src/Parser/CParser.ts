@@ -1,4 +1,4 @@
-import { Diagnostic, DiagnosticSeverity, Position, SignatureInformation } from 'vscode-languageserver/node';
+import { Diagnostic, DiagnosticSeverity, DiagnosticTag, Position, SignatureInformation, URI } from 'vscode-languageserver/node';
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
@@ -211,7 +211,7 @@ export class CParser {
 		return this.processTokens(_NotManagedDocs, tokens, script, definedVariables_, definedFunctions_, scopeLevel_, isIncludescript);
 	}
 
-	addError(text :string, diag :Diagnostic[], doc :TextDocument, scriptPos :Position, token :Token, isIncludescript :boolean, serverity :DiagnosticSeverity = DiagnosticSeverity.Error, code :number = 0) {
+	addError(text :string, diag :Diagnostic[], doc :TextDocument, scriptPos :Position, token :Token, isIncludescript :boolean, serverity :DiagnosticSeverity = DiagnosticSeverity.Error, code :number = 0, tagsGiven :DiagnosticTag[] = []) {
 		// do NOT add Errors when we parse tokens in an includescript
 		if(serverity == DiagnosticSeverity.Error) { this.m_ErrorCount++; }
 		if(isIncludescript) { return; }
@@ -232,7 +232,9 @@ export class CParser {
 			},
 			severity: serverity,
 			source: "futurec",
-			code: code
+			data: "hallo",
+			code: code,
+			tags: tagsGiven
 		})
 	}
 
@@ -334,6 +336,8 @@ export class CParser {
 		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "int"));
 		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "int"));
 		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "int"));
+		vars.set("DLG_STATIC", new Variable("DLG_STATIC", 0, "int"));
+		vars.set("DLG_LINE", new Variable("DLG_LINE", 0, "int"));
 
 		vars.set("WEIGHT_NORMAL", new Variable("WEIGHT_NORMAL", 0, "int"));
 		vars.set("PAGE_PORTRAIT", new Variable("PAGE_PORTRAIT", 0, "int"));
@@ -405,7 +409,7 @@ export class CParser {
 				if(currentTokenText == "ENDFUNCTION") {
 					let secondToken = this.getToken(tokens,i + 1);
 					if(secondToken.m_Text != ";") {
-						this.addError("After ENDFUNCTION must follow an ';'", diag, doc, scriptPos, secondToken, isIncludescript);
+						this.addError("After ENDFUNCTION must follow an ';'", diag, doc, scriptPos, currentToken, isIncludescript);
 					}
 					
 					if(!functionReturnTypeProcessed && functionReturnType != "void") {
@@ -504,7 +508,7 @@ export class CParser {
 									}
 								}
 								if(success && tokens[j].m_Text != ";") {
-									this.addError("; expected '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+									this.addError("After Parameterlist in FUNCTION must follow an ';'", diag, doc, scriptPos, tokens[j - 1], isIncludescript);
 								}
 								i = j;
 							}
@@ -586,7 +590,7 @@ export class CParser {
 					let secondToken = this.getToken(tokens,i + 1);
 					if(secondToken.m_Text != ";") {
 						if(secondToken.m_Text != "else") {
-							this.addError("';' expected after '}'", diag, doc, scriptPos, currentToken,isIncludescript);
+							this.addError("';' expected after '}'", diag, doc, scriptPos, currentToken,isIncludescript, DiagnosticSeverity.Error, 5000);
 						}
 					}
 					if(scopeLevel - 1 >= 0) {
@@ -1050,16 +1054,16 @@ export class CParser {
 			}
 		}
 
-		// if(!isIncludescript && !script.m_MainScript) {
-		// 	for(let x = 0; x < definedVariables.length; x++) {
-		// 		definedVariables[x].forEach((value, key) => {
-		// 			if(!value.m_IsUsed && value.m_Token && !value.m_IsInIncludescript) {
-		// 				this.addError("'"+value.m_Name+"' is declared but its value is never read", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000);
-		// 			}
-		// 		})
+		if(!isIncludescript && !script.m_MainScript) {
+			for(let x = 0; x < definedVariables.length; x++) {
+				definedVariables[x].forEach((value, key) => {
+					if(!value.m_IsUsed && value.m_Token && value.m_FromScript && value.m_FromScript == script.m_scriptnumber) {
+						this.addError("'"+value.m_Name+"' is declared but its value is never read", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000, [DiagnosticTag.Unnecessary]);
+					}
+				})
 	
-		// 	}
-		// }
+			}
+		}
 
 		return { m_diagnostics: diag,
 			m_definedFunctions: definedFunctions,

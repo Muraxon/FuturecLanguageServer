@@ -260,19 +260,14 @@ connection.onRequest("custom/getHookStart", (params :any) :any => {
 });
 
 connection.onRequest("custom/GetDiagnosticsForAllScripts", async (obj) => {
-	let settings = await documentSettings.get(obj.uri);
 
-	if(settings && settings.ShowDiagnosisOfCurrentScript) {
-		let doc = documents.get(obj.uri);
-		if(doc) {
-			let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnosticForAllScripts);
-			connection.sendDiagnostics({
-				diagnostics: diag,
-				uri: obj.uri
-			});
-		}
-	} else {
-		connection.sendDiagnostics({uri: obj.uri, diagnostics: []})
+	let doc = documents.get(obj.uri);
+	if(doc) {
+		let diag = <Diagnostic[]>GlobalManager.doWithDocuments(documents, doc, obj.pos, OnDiagnosticForAllScripts);
+		connection.sendDiagnostics({
+			diagnostics: diag,
+			uri: obj.uri
+		});
 	}
 	return 1;
 });
@@ -349,21 +344,24 @@ connection.onDidChangeWatchedFiles(_change => {
 connection.onCodeAction((params, token) :(Command | CodeAction)[] => {
 	let doc = documents.get(params.textDocument.uri);
 	if(doc) {
-		let variable = doc.getText(params.range);
-
-		return [{
-			title: "Extract return and replace with isVariableDefined",
-			diagnostics: params.context.diagnostics,
-			kind: CodeActionKind.QuickFix,
-			edit: {
-				changes: {
-					[params.textDocument.uri]: [{
-						range: params.range,
-						newText: "if(H.IsVariableDefined("+variable+")) {\n\t\t//Do Something to prevent execution\n\t}"
-					}]
-				}
+		if(params.context.diagnostics[0]){
+			if(params.context.diagnostics[0].code === 5000) {
+				return [{
+					title: "Add ';'",
+					diagnostics: params.context.diagnostics,
+					isPreferred: true,
+					kind: CodeActionKind.QuickFix,
+					edit: {
+						changes: {
+							[params.textDocument.uri]: [{
+								range: params.range,
+								newText: "};"
+							}]
+						}
+					}
+				}]
 			}
-		}];
+		}
 	}
 	return [];
 });

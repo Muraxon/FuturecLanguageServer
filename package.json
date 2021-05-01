@@ -58,19 +58,19 @@
                 "future_c.CodeLens": {
                     "scope": "application",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Wenn aktiviert wird im aktuellen Editor CodeLens aktiviert - diese zeigen ober dem SCRIPT:-Teil eine Optionen für das Hinzufügen / Entfernen des Skripts aus dem Design an"
                 },
                 "future_c.AutocompletionMitZusaetzlichenTextedits": {
                     "scope": "application",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Wenn aktiviert wird im Editor auch die Variable autocompleted"
                 },
                 "future_c.ShowDiagnosisOfCurrentScript": {
                     "scope": "application",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Wenn aktiviert werdem im Editor alle Warnings/Errors/Hints/Infos angezeigt"
                 },
                 "future_c.ShowHovering": {
@@ -82,13 +82,13 @@
                 "future_c.Autocompletion": {
                     "scope": "application",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Wenn aktiviert wird im Editor Autocompletion aktiviert."
                 },
                 "future_c.ShowSignatureOrSnippets": {
                     "scope": "application",
                     "type": "boolean",
-                    "default": true,
+                    "default": false,
                     "description": "Wenn aktiviert wird im Editor die Signatur oder Snippet als Parameter angezeigt."
                 }
             }
