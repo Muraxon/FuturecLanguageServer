@@ -214,7 +214,7 @@ export function activate(context: ExtensionContext) {
 				files[i] = res[i].toString();
 			}
 
-			client.sendNotification("custom/sendFilename", [files]);
+			client.sendNotification("custom/sendFilename", files);
 		});
 
 		client.onNotification("custom/getParserXML", async () => {

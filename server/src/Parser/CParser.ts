@@ -27,15 +27,15 @@ class Variable {
 	m_Type :string;
 	m_IsUsed :boolean;
 	m_Token :Token|null;
-	m_IsInIncludescript :boolean;
+	m_FromScript :number|null;
 
-	constructor(name :string, scope :number, type :string, isInIncludescript :boolean, token: Token|null = null) {
+	constructor(name :string, scope :number, type :string, fromScript :number|null = null, token: Token|null = null) {
 		this.m_Name = name;
 		this.m_Scope = scope;
 		this.m_Type = type;
 		this.m_IsUsed = false;
 		this.m_Token = token;
-		this.m_IsInIncludescript = isInIncludescript;
+		this.m_FromScript = fromScript;
 	}
 
 	used() {
@@ -275,67 +275,64 @@ export class CParser {
 	}
 
 	AddStandardVariables(vars :Map<string, Variable>) {
-		vars.set("FALSE", new Variable("FALSE", 0, "BOOL", false));
-		vars.set("TRUE", new Variable("TRUE", 0, "BOOL", false));
-		vars.set("DIR_DOWN", new Variable("DIR_DOWN", 0, "BOOL", false));
-		vars.set("DIR_UP", new Variable("DIR_UP", 0, "BOOL", false));
-		vars.set("m_Rec", new Variable("m_Rec", 0, "CTable", false));
-		vars.set("m_Rec2", new Variable("m_Rec2", 0, "CTable", false));
-		vars.set("m_RecNr", new Variable("m_RecNr", 0, "int", false));
-		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int", false));
-		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "CString", false));
-		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "CString", false));
-		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int", false));
-		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL", false));
-		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int", false));
-		vars.set("m_tSelectionTable", new Variable("m_tSelectionTable", 0, "CTable", false));
-		vars.set("m_nUnitTestID", new Variable("m_nUnitTestID", 0, "int", false));
-		vars.set("mstrUnitTestResult1", new Variable("mstrUnitTestResult1", 0, "CTable", false));
-		vars.set("mstrUnitTestResult2", new Variable("mstrUnitTestResult2", 0, "CTable", false));
-		vars.set("mstrUnitTestResult3", new Variable("mstrUnitTestResult3", 0, "CTable", false));
-
-		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString", false));
-		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString", false));
-		vars.set("STRING_QUOTE", new Variable("STRING_QUOTE", 0, "CString", false));
-		vars.set("STRING_SLASH1", new Variable("STRING_SLASH1", 0, "CString", false));
-		vars.set("STRING_SLASH2", new Variable("STRING_SLASH2", 0, "CString", false));
-		vars.set("STRING_BACKSLASH1", new Variable("STRING_BACKSLASH1", 0, "CString", false));
-		vars.set("STRING_PARENTHESISOPEN", new Variable("STRING_PARENTHESISOPEN", 0, "CString", false));
-		vars.set("STRING_PARENTHESISCLOSE", new Variable("STRING_PARENTHESISCLOSE", 0, "CString", false));
-		vars.set("STRING_LINEFEED", new Variable("STRING_LINEFEED", 0, "CString", false));
-		vars.set("STRING_BRACKETOPEN", new Variable("STRING_BRACKETOPEN", 0, "CString", false));
-		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString", false));
-		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString", false));
-		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString", false));
-		vars.set("STRING_RAUTE", new Variable("STRING_RAUTE", 0, "CString", false));
-		vars.set("STRING_CARRIAGERETURN", new Variable("STRING_CARRIAGERETURN", 0, "CString", false));
-
-		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "int", false));
-		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "int", false));
-		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "int", false));
-		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "int", false));
-		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "int", false));
-		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "int", false));
-		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "int", false));
-		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "int", false));
-		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "int", false));
-		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "int", false));
-		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "int", false));
-		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "int", false));
-
-		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "int", false));
-		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "int", false));
-		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "int", false));
-		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "int", false));
-		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "int", false));
-		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "int", false));
-		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "int", false));
-		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "int", false));
-		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "int", false));
-		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "int", false));
-		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "int", false));
-		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "int", false));
-		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "int", false));
+		vars.set("FALSE", new Variable("FALSE", 0, "BOOL"));
+		vars.set("TRUE", new Variable("TRUE", 0, "BOOL"));
+		vars.set("DIR_DOWN", new Variable("DIR_DOWN", 0, "BOOL"));
+		vars.set("DIR_UP", new Variable("DIR_UP", 0, "BOOL"));
+		vars.set("m_Rec", new Variable("m_Rec", 0, "CTable"));
+		vars.set("m_Rec2", new Variable("m_Rec2", 0, "CTable"));
+		vars.set("m_RecNr", new Variable("m_RecNr", 0, "int"));
+		vars.set("m_TabNr", new Variable("m_TabNr", 0, "int"));
+		vars.set("m_strFullProtocol", new Variable("m_strFullProtocol", 0, "CString"));
+		vars.set("m_strTextBox", new Variable("m_strTextBox", 0, "CString"));
+		vars.set("m_nMandant", new Variable("m_nMandant", 0, "int"));
+		vars.set("m_bBiciMode", new Variable("m_bBiciMode", 0, "BOOL"));
+		vars.set("m_nJahr", new Variable("m_nJahr", 0, "int"));
+		vars.set("m_tSelectionTable", new Variable("m_tSelectionTable", 0, "CTable"));
+		vars.set("m_nUnitTestID", new Variable("m_nUnitTestID", 0, "int"));
+		vars.set("mstrUnitTestResult1", new Variable("mstrUnitTestResult1", 0, "CTable"));
+		vars.set("mstrUnitTestResult2", new Variable("mstrUnitTestResult2", 0, "CTable"));
+		vars.set("mstrUnitTestResult3", new Variable("mstrUnitTestResult3", 0, "CTable"));
+		vars.set("STRING_TAB", new Variable("STRING_TAB", 0, "CString"));
+		vars.set("STRING_LINEBREAK", new Variable("STRING_LINEBREAK", 0, "CString"));
+		vars.set("STRING_QUOTE", new Variable("STRING_QUOTE", 0, "CString"));
+		vars.set("STRING_SLASH1", new Variable("STRING_SLASH1", 0, "CString"));
+		vars.set("STRING_SLASH2", new Variable("STRING_SLASH2", 0, "CString"));
+		vars.set("STRING_BACKSLASH1", new Variable("STRING_BACKSLASH1", 0, "CString"));
+		vars.set("STRING_PARENTHESISOPEN", new Variable("STRING_PARENTHESISOPEN", 0, "CString"));
+		vars.set("STRING_PARENTHESISCLOSE", new Variable("STRING_PARENTHESISCLOSE", 0, "CString"));
+		vars.set("STRING_LINEFEED", new Variable("STRING_LINEFEED", 0, "CString"));
+		vars.set("STRING_BRACKETOPEN", new Variable("STRING_BRACKETOPEN", 0, "CString"));
+		vars.set("STRING_BRACKETCLOSE", new Variable("STRING_BRACKETCLOSE", 0, "CString"));
+		vars.set("STRING_BRACESOPEN", new Variable("STRING_BRACESOPEN", 0, "CString"));
+		vars.set("STRING_BRACESCLOSE", new Variable("STRING_BRACESCLOSE", 0, "CString"));
+		vars.set("STRING_RAUTE", new Variable("STRING_RAUTE", 0, "CString"));
+		vars.set("STRING_CARRIAGERETURN", new Variable("STRING_CARRIAGERETURN", 0, "CString"));
+		vars.set("TYPE_INT", new Variable("TYPE_INT", 0, "int"));
+		vars.set("TYPE_MONEY", new Variable("TYPE_MONEY", 0, "int"));
+		vars.set("TYPE_VARSTRING", new Variable("TYPE_VARSTRING", 0, "int"));
+		vars.set("TYPE_FIXSTRING", new Variable("TYPE_FIXSTRING", 0, "int"));
+		vars.set("TYPE_BOOL", new Variable("TYPE_BOOL", 0, "int"));
+		vars.set("TYPE_BYTE", new Variable("TYPE_BYTE", 0, "int"));
+		vars.set("TYPE_LINK", new Variable("TYPE_LINK", 0, "int"));
+		vars.set("TYPE_DOUBLE", new Variable("TYPE_DOUBLE", 0, "int"));
+		vars.set("TYPE_CTABLE", new Variable("TYPE_CTABLE", 0, "int"));
+		vars.set("TYPE_DATETIME", new Variable("TYPE_DATETIME", 0, "int"));
+		vars.set("TYPE_PERCENT", new Variable("TYPE_PERCENT", 0, "int"));
+		vars.set("TYPE_SUBTABLE", new Variable("TYPE_SUBTABLE", 0, "int"));
+		vars.set("DLG_EDIT", new Variable("DLG_EDIT", 0, "int"));
+		vars.set("DLG_COMBO", new Variable("DLG_COMBO", 0, "int"));
+		vars.set("DLG_LINK_COMBO", new Variable("DLG_LINK_COMBO", 0, "int"));
+		vars.set("DLG_EDIT_PASSWORD", new Variable("DLG_EDIT_PASSWORD", 0, "int"));
+		vars.set("DLG_EDIT_MONEY", new Variable("DLG_EDIT_MONEY", 0, "int"));
+		vars.set("DLG_EDIT_DATE", new Variable("DLG_EDIT_DATE", 0, "int"));
+		vars.set("DLG_EDIT_PERCENT", new Variable("DLG_EDIT_PERCENT", 0, "int"));
+		vars.set("DLG_EDIT_NUMERIC", new Variable("DLG_EDIT_NUMERIC", 0, "int"));
+		vars.set("DLG_LINK_SEARCH", new Variable("DLG_LINK_SEARCH", 0, "int"));
+		vars.set("DLG_EDIT_MULTILINE", new Variable("DLG_EDIT_MULTILINE", 0, "int"));
+		vars.set("DLG_PICTURE", new Variable("DLG_PICTURE", 0, "int"));
+		vars.set("DLG_CHECKBOX", new Variable("DLG_CHECKBOX", 0, "int"));
+		vars.set("DLG_LISTVIEW", new Variable("DLG_LISTVIEW", 0, "int"));
 	}
 
 	processTokens(_NotManagedDocs :Map<string, TextDocument>,
@@ -439,7 +436,7 @@ export class CParser {
 
 							let index :number = this.isFunctionDefined(functionText, definedFunctions, scopeLevel);
 							if(index >= 0) {
-								this.addError("function '"+functionText+"' already defined", diag, doc, scriptPos, tokens[i + 3], isIncludescript);
+								this.addError("function '"+functionText+"' already defined", diag, doc, scriptPos, tokens[i + 3], isIncludescript, DiagnosticSeverity.Information);
 							} else {
 								definedFunctions[scopeLevel - 1].push(functionText);
 							}
@@ -473,7 +470,7 @@ export class CParser {
 												this.addError("Another parameter is already named like this '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
 												break;
 											} else {
-												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, isIncludescript, tokens[j]));	
+												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, script.m_scriptnumber, tokens[j]));	
 											}
 										} else {
 											if(!this.IsVariable(tokens[j].m_Text)) {
@@ -484,7 +481,7 @@ export class CParser {
 												this.addError("Another parameter is already named like this '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
 												break;
 											} else {
-												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, isIncludescript, tokens[j]));	
+												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, script.m_scriptnumber, tokens[j]));	
 											}
 										}
 										
@@ -627,7 +624,7 @@ export class CParser {
 										type = "double";
 									} 
 
-									newScope.set(val, new Variable(val, scopeLevel, type, isIncludescript));
+									newScope.set(val, new Variable(val, scopeLevel, type, script.m_scriptnumber));
 								});
 								variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 							}
@@ -653,7 +650,7 @@ export class CParser {
 									type = "double";
 								} 
 
-								newScope.set(val, new Variable(val, scopeLevel, type, isIncludescript));
+								newScope.set(val, new Variable(val, scopeLevel, type, script.m_scriptnumber));
 							});
 							variablesToAddToStackAfterScopeIncrement.delete(scopeLevel - 1);
 						}
@@ -776,14 +773,54 @@ export class CParser {
 							else if(definedVariables[scopeLevel].get(nextIdent)) {
 								this.addError("Redefining variable '" + nextIdent + "'" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
 							}
-							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText, isIncludescript, secondToken));
+							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText, script.m_scriptnumber, secondToken));
 							
 							// completly new expression-tree must be analysed
 
-						} else {
-							this.addError("';' or '=' expected", diag, doc, scriptPos, secondToken, isIncludescript);
+							i += 2;
+						} 
+						else if(thirdToken.m_Text == ",") {
+							let j = 0;
+							let variable :Variable|undefined = undefined;
+							while(variable == undefined && j < scopeLevel) {
+								variable = definedVariables[j].get(nextIdent);
+								j++;
+							}
+							if(variable) {
+								this.addError("shadowing of variable '" + nextIdent + "' detected" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Hint);
+							}
+							else if(definedVariables[scopeLevel].get(nextIdent)) {
+								this.addError("Redefining variable '" + nextIdent + "'" , diag, doc, scriptPos, secondToken, isIncludescript, DiagnosticSeverity.Information);
+							}
+							definedVariables[scopeLevel].set(nextIdent, new Variable(nextIdent, scopeLevel, currentTokenText, script.m_scriptnumber, secondToken));
+							
+							i += 3;
+							let nextToken = this.getToken(tokens, i);
+							while(nextToken.m_Text != ";") {
+								if(nextToken.m_Text != ",") {
+									let j = 0;
+									let variable :Variable|undefined = undefined;
+									while(variable == undefined && j < scopeLevel) {
+										variable = definedVariables[j].get(nextToken.m_Text);
+										j++;
+									}
+									if(variable) {
+										this.addError("shadowing of variable '" + nextToken.m_Text + "' detected" , diag, doc, scriptPos, nextToken, isIncludescript, DiagnosticSeverity.Hint);
+									}
+									else if(definedVariables[scopeLevel].get(nextToken.m_Text)) {
+										this.addError("Redefining variable '" + nextToken.m_Text + "'" , diag, doc, scriptPos, nextToken, isIncludescript, DiagnosticSeverity.Information);
+									}
+									definedVariables[scopeLevel].set(nextToken.m_Text, new Variable(nextToken.m_Text, scopeLevel, currentTokenText, script.m_scriptnumber, nextToken));
+								}
+
+								i++;
+								nextToken = this.getToken(tokens, i);
+							}
 						}
-						i += 2;
+						else {
+							this.addError("';' or '=' expected", diag, doc, scriptPos, secondToken, isIncludescript);
+							i += 2;
+						}
 					}
 				}
 				else if(this.isKeyword(currentTokenText)) {
@@ -935,7 +972,7 @@ export class CParser {
 
 					i += 2;
 				}
-				else if(currentTokenText == "runprintscript") {
+				else if(currentTokenText == "runprintscript" || currentTokenText == "runscript") {
 					
 				}
 				else {

@@ -24,7 +24,7 @@
         "menus": {
             "editor/context": [
               {
-                "when": "editorFocus",
+                "when": "editorFocus && editorLangId == futurec",
                 "command": "Check.Skript.Syntax",
                 "group": "navigation"
               }
@@ -32,7 +32,7 @@
             "editor/title": [{
                 "command": "Check.Skript.Syntax",
                 "group": "navigation",
-                "when": "editorFocus"
+                "when": "editorFocus && editorLangId == futurec"
             }]
           },
         "configuration": {

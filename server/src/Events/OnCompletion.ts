@@ -120,31 +120,13 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 	}
 	completionCached = [];
 
-	script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true);
+	script = GlobalAnalyzer.getCompleteCurrentScript(pos, curDoc, docs, true, true, false);
 
 	if(script) {
 		let parser = new CParser();
 		let ScriptInformation = parser.ParseText(docs, script, false);
 
 		let alreadyAdded :string[] = [];
-		for(let x = 0; x < ScriptInformation.m_definedFunctions.length; x++) {
-			for(let y = 0; y < ScriptInformation.m_definedFunctions[x].length; y++) {
-				if(!alreadyAdded.find((vari) => {
-					if(vari == ScriptInformation.m_definedFunctions[x][y]) {
-						return true;
-					}
-				})) {
-					alreadyAdded.push(ScriptInformation.m_definedFunctions[x][y]);
-					completionCached.push({
-						label: ScriptInformation.m_definedFunctions[x][y],
-						kind: CompletionItemKind.Function
-					})
-				} 
-
-			}
-		}
-
-		alreadyAdded = [];
 		for(let x = 0; x < ScriptInformation.m_definedVariables.length; x++) {
 			ScriptInformation.m_definedVariables[x].forEach((variable, key) => {
 				if(!alreadyAdded.find((vari) => {
@@ -156,7 +138,7 @@ export async function OnCompletion(docs :Map<string, TextDocument>, curDoc :Text
 					completionCached.push({
 						label: variable.m_Name,
 						kind: CompletionItemKind.Variable,
-						detail: variable.m_Type
+						detail: variable.m_Type + " " + variable.m_Name + " defined in script " + variable.m_FromScript
 					});
 				} 
 			})

@@ -38,7 +38,7 @@
 		"keywords": {
 			"patterns": [{
 				"name": "keyword.control.ffscript",
-				"match": "\\b(if|else|while|for|return|funcreturn|foreachrow|foreachreverse|void)\\b"
+				"match": "\\b(runscript|runprintscript|if|else|while|for|return|funcreturn|foreachrow|foreachreverse|void)\\b"
 			}]
 		},
 		"functionDefinition" : {
