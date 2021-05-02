@@ -624,7 +624,7 @@ export class CParser {
 										type = "CDateTime";
 									} else if(val.substring(0, 1) == "b") {
 										type = "BOOL";
-									} else if(val.substring(0, 1) == "t") {
+									} else if(val.substring(0, 1) == "t" || val.substring(0, 3) == "m_t") {
 										type = "CTable";
 									} else if(val.substring(0, 1) == "m") {
 										type = "CMoney";

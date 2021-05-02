@@ -73,6 +73,7 @@ export function activate(context: ExtensionContext) {
 			fileEvents: workspace.createFileSystemWatcher("**/scriptautocompletedefs.json")
 		},
 		workspaceFolder: workspace.workspaceFolders[0],
+		progressOnInitialization: true,
 		middleware: {
 			provideHover: (doc, pos, token, next) => {
 				let config = workspace.getConfiguration();
@@ -121,9 +122,7 @@ export function activate(context: ExtensionContext) {
 	
 						items.forEach(element => {
 							if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
-								if(completion == "Snippet") {
-									element.insertText = new SnippetString(element.insertText.toString());
-								} else if(completion == "Signatur") {
+								if(completion == "Signatur") {
 									element.insertText = element.label;
 								}
 							}
