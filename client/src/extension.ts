@@ -228,13 +228,28 @@ export function activate(context: ExtensionContext) {
 				uri: filename,
 				root: root_path
 			});
-		})
+		});
 
 		client.onNotification("custom/getCursorPos", () => {
 			client.sendNotification("custom/sendCursorPos", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
 			client.sendNotification("custom/sendCursorPosReturn", {uri: window.activeTextEditor.document.uri.toString(), pos: window.activeTextEditor.selection.active});
-		})
+		});
 
+		window.onDidChangeTextEditorSelection((e) => {
+			if(window.activeTextEditor && window.activeTextEditor.document.languageId === "futurec") {
+				client.sendRequest("custom/GetScriptNumber", {
+					doc: window.activeTextEditor.document.uri.toString(),
+					pos: window.activeTextEditor.selection.active
+				}).then((value :{number:number,name:string}) => {
+					if(value.number > 0 && value.name != "NOT DEFINED") {
+						window.setStatusBarMessage("Wokring on script " + value.number + " - " + value.name);
+					} else {
+						window.setStatusBarMessage("");
+					}
+				});
+			}
+		});
+	
 	});
 
 	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
@@ -290,11 +305,12 @@ export function activate(context: ExtensionContext) {
 
 	context.subscriptions.push(commands.registerCommand("create.hook", async () => {
 		
-		let scriptNumber :number = await client.sendRequest("custom/GetScriptNumber", {
+		let script :{number:number,name:string} = await client.sendRequest("custom/GetScriptNumber", {
 			doc: window.activeTextEditor.document.uri.toString(),
 			pos: window.activeTextEditor.selection.active
 		});
 		
+		let scriptNumber = script.number;
 		if(scriptNumber > 0) {
 			
 			let info = "Bitte geben Sie den Namen des Hooks ein.";
@@ -724,7 +740,6 @@ export function activate(context: ExtensionContext) {
 		}
 
 	}));
-
 
 	//
 	// Start the client. This will also launch the server

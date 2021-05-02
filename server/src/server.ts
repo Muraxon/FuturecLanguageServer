@@ -196,16 +196,19 @@ documents.onDidChangeContent((change :TextDocumentChangeEvent<TextDocument>) => 
 	validateTextDocument(change.document);
 });
 
-connection.onRequest("custom/GetScriptNumber", (params :any) :number => {
+connection.onRequest("custom/GetScriptNumber", (params :any) :{number:number, name:string} => {
 
 	let doc = documents.get(params.doc);
 	if(doc) {
 		let script = GlobalAnalyzer.getEditedScript(params.pos, doc, true);
 		if(script) {
-			return script.m_scriptnumber;
+			return {
+				number: script.m_scriptnumber,
+				name: script.m_ScriptName
+			};
 		}
 	}
-	return 0;
+	return {number:0,name:"NOT DEFINED"};
 });
 
 

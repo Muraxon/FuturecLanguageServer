@@ -561,6 +561,10 @@ export class CParser {
 									} else {
 										variablesToAddToStackAfterScopeIncrement.set(scopeLevel, [fifthToken.m_Text]);
 									}
+									let variable = this.isVariableDefined(fifthToken.m_Text, definedVariables, scopeLevel);
+									if(variable) {
+										variable.used();
+									}
 								} else {
 									this.addError("'"+fifthToken.m_Text+"' must be a variable", diag, doc, scriptPos, fourtThoken,isIncludescript);
 								}
@@ -877,7 +881,7 @@ export class CParser {
 							if(this.IsVariable(thirdToken.m_Text)) {
 								let variable = this.isVariableDefined(thirdToken.m_Text, definedVariables, scopeLevel);
 								if(!variable) {
-									let errorText = "'"+currentTokenText+"' possibly not defined, maybe";
+									let errorText = "'"+thirdToken.m_Text+"' possibly not defined, maybe";
 									let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
 									if(hasIncludescript) {
 										severity = DiagnosticSeverity.Information;
@@ -1054,16 +1058,16 @@ export class CParser {
 			}
 		}
 
-		if(!isIncludescript && !script.m_MainScript) {
-			for(let x = 0; x < definedVariables.length; x++) {
-				definedVariables[x].forEach((value, key) => {
-					if(!value.m_IsUsed && value.m_Token && value.m_FromScript && value.m_FromScript == script.m_scriptnumber) {
-						this.addError("'"+value.m_Name+"' is declared but its value is never read", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000, [DiagnosticTag.Unnecessary]);
-					}
-				})
+		// if(!isIncludescript && !script.m_MainScript) {
+		// 	for(let x = 0; x < definedVariables.length; x++) {
+		// 		definedVariables[x].forEach((value, key) => {
+		// 			if(!value.m_IsUsed && value.m_Token && value.m_FromScript && value.m_FromScript == script.m_scriptnumber) {
+		// 				this.addError("'"+value.m_Name+"' is declared but its value is never read", diag, doc, scriptPos, value.m_Token, isIncludescript, DiagnosticSeverity.Hint, 1000, [DiagnosticTag.Unnecessary]);
+		// 			}
+		// 		})
 	
-			}
-		}
+		// 	}
+		// }
 
 		return { m_diagnostics: diag,
 			m_definedFunctions: definedFunctions,
