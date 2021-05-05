@@ -342,10 +342,10 @@ export class Analyzer {
 		}
 	}
 
-	getAllScripts(doc :TextDocument, notManagedDocs :Map<string, TextDocument>) :Script[] {
+	getAllScripts(doc :TextDocument, _NotManagedDocs :Map<string, TextDocument>) :Script[] {
 		let m :RegExpExecArray | null;
 		let mEnd :RegExpExecArray | null;
-		let pattern = /^\s*(SCRIPT|INSERTINTOSCRIPT):([0-9]+)(.*)$/gm;
+		let pattern = /^\s*(SCRIPT|INSERTINTOSCRIPT):([0-9]+),(.*)$/gm;
 		let patternEndScript = /^\s*ENDSCRIPT.*$/gm;
 
 		let AllScripts : Script[] = new Array();
@@ -359,7 +359,20 @@ export class Analyzer {
 			if(mEnd) {
 				AllScripts.push(new Script(text.substr(m.index, mEnd.index - m.index), parseInt(m[2]), doc.positionAt(m.index), doc.uri, m[1], m[3]));
 				
-				this.getIncludeScriptForCurrentScript(AllScripts[AllScripts.length - 1], notManagedDocs, false);
+				this.getIncludeScriptForCurrentScript(AllScripts[AllScripts.length - 1], _NotManagedDocs, false);
+
+				if(m[1] == "INSERTINTOSCRIPT" && _NotManagedDocs) {
+					let scriptNumber = parseInt(m[2]);
+					let scriptName = m[3];
+
+					let mainScript = this.getScripts([scriptNumber], _NotManagedDocs, scriptName);
+					if(mainScript && mainScript.length == 1) {
+						let MainScript = mainScript[0];
+						this.getIncludeScriptForCurrentScript(MainScript, _NotManagedDocs, false);
+						this.getHooksForCurrentDocument(MainScript, doc);
+						AllScripts[AllScripts.length - 1].m_MainScript = MainScript;
+					}
+				}
 			}
 		}
 
