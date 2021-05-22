@@ -313,25 +313,39 @@ export function activate(context: ExtensionContext) {
 		let scriptNumber = script.number;
 		if(scriptNumber > 0) {
 			
-			let info = "Bitte geben Sie den Namen des Hooks ein.";
-			let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
-			let hookname = await window.showInputBox({
-				ignoreFocusOut: true,
-				valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
-				prompt: info,
-				value: "//ADDHOOK-"+scriptNumber+"-",
-				validateInput: (text :string) => {
-					hookPattern.lastIndex = 0;
-					if(!hookPattern.exec(text)) {
-						return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+			let line = window.activeTextEditor.document.lineAt(window.activeTextEditor.selection.active.line);
+			let lineText = line.text;
+			lineText = lineText.trim();
+			let regex = /^\/\/ADDHOOK.*/gm;
+			let regExMatch = regex.exec(lineText);
+			let hookname = "";
+			let insertHookname = true;
+			if(!regExMatch) {
+				let info = "Bitte geben Sie den Namen des Hooks ein.";
+				let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
+				hookname = await window.showInputBox({
+					ignoreFocusOut: true,
+					valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
+					prompt: info,
+					value: "//ADDHOOK-"+scriptNumber+"-",
+					validateInput: (text :string) => {
+						hookPattern.lastIndex = 0;
+						if(!hookPattern.exec(text)) {
+							return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+						}
+						return "";
 					}
-					return "";
-				}
-			});
+				});
+			} else {
+				insertHookname = false;
+				hookname = regExMatch[0];
+			}
+			
 	
 			if(hookname) {
 				hookname.trim();
 				let uri = await window.showOpenDialog({
+					title: "Datei für Hook '" + hookname + "' auswählen",
 					canSelectFolders: false,
 					canSelectMany: false,
 					filters: { "Dateien": ["cpp"]},
@@ -399,7 +413,9 @@ export function activate(context: ExtensionContext) {
 			
 									
 								window.activeTextEditor.edit((editbuilder) => {
-									editbuilder.insert(window.activeTextEditor.selection.active, hookname);
+									if(insertHookname) {
+										editbuilder.insert(window.activeTextEditor.selection.active, hookname);
+									}
 								}).then((success) => {
 									if(success) {
 										window.showTextDocument(doc, ViewColumn.Beside).then((texteditor) => {
