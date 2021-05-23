@@ -242,7 +242,7 @@ export function activate(context: ExtensionContext) {
 					pos: window.activeTextEditor.selection.active
 				}).then((value :{number:number,name:string}) => {
 					if(value.number > 0 && value.name != "NOT DEFINED") {
-						window.setStatusBarMessage("Wokring on script " + value.number + " - " + value.name);
+						window.setStatusBarMessage("Working on script " + value.number + " - " + value.name);
 					} else {
 						window.setStatusBarMessage("");
 					}
@@ -455,9 +455,10 @@ export function activate(context: ExtensionContext) {
 
 
 	context.subscriptions.push(commands.registerCommand("create.script", async () => {
-		let info = "Bitte geben Sie den Namen des neuen Skripts ein.";
+		let info = "Bitte geben Sie die Nummer und den Namen des neuen Skripts ein.";
 		let scriptName = await window.showInputBox({
 			ignoreFocusOut: true,
+			placeHolder: "eg.: 200,Scriptname",
 			prompt: info,
 			validateInput: (text :string) => {
 				let hookPattern = new RegExp("^[0-9]+,[a-zA-ZöäüÖÄÜ_ ]+$", "g");
