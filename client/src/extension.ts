@@ -3,6 +3,7 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
+import { env } from 'node:process';
 import * as path from 'path';
 import { workspace, 
 	ExtensionContext, 
@@ -286,6 +287,113 @@ export function activate(context: ExtensionContext) {
 			return client.sendRequest("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
 		});
 		
+	}));
+
+	context.subscriptions.push(commands.registerCommand("create.dart.definition", async () => {
+		let uri = await window.showOpenDialog({
+			canSelectFolders: false,
+			canSelectMany: false
+		});
+
+		if(uri && uri.length > 0) {
+			let file = uri[0];
+			let dart_doc = await workspace.openTextDocument(file);
+			
+			let dart_text = dart_doc.getText();
+			if(dart_text.length > 0) {
+				let start_table = /@FutureTableNumber\(([0-9]+)\)/gm;
+
+				let tables = [];
+
+				let m = start_table.exec(dart_text)
+				while(m) {
+					tables.push({
+						start_of_class: m.index,
+						table: m[1]
+					})
+					m = start_table.exec(dart_text);
+				}
+
+				let complete_function = "";
+				for(let i = 0; i < tables.length; i++) {
+					let str = "";
+					let obj = tables[i];
+					let start_of_class = obj.start_of_class;
+					let table = obj.table;
+
+					let class_pos = dart_doc.positionAt(start_of_class + 5);
+					let class_line = dart_doc.lineAt(class_pos.line);
+					let class_line_prev = dart_doc.lineAt(class_pos.line - 1);
+					let class_line_after = dart_doc.lineAt(class_pos.line + 1);
+
+					let class_string = "//" + class_line_prev.text.trim() + "\n";
+					class_string += "\t//" + class_line.text.trim() + "\n";
+					class_string += "\t//" + class_line_after.text.trim();
+
+					let end_of_class = dart_text.indexOf("}", start_of_class + 1);
+					let json = "";
+					
+					let start_column = /@FutureColumnNumber\(([0-9]+)\)/gm;
+					start_column.lastIndex = start_of_class;
+
+					let x = start_column.exec(dart_text);
+					while(x && end_of_class > x.index && start_of_class < x.index) {
+						let pos = dart_doc.positionAt(x.index);
+						let line_after = dart_doc.lineAt(pos.line + 1);
+						let current_line = dart_doc.lineAt(pos.line);
+						let line_prev = dart_doc.lineAt(pos.line - 1);
+
+						str = str + "\n\t\t//" + line_prev.text.trim();
+						str = str + "\n\t\t//" + current_line.text.trim();
+						str = str + "\n\t\t//" + line_after.text.trim();
+
+						let var_reg = /.*get ([a-zA-ZöäüÖÄÜ_0-9]+)/gm;
+						let variable = var_reg.exec(line_after.text);
+						if(variable) {
+							str = str + "\n" + "\t\tCString str" + variable[1] + ` = tData.GetElementSTRING(${x[1]}, nRow);\n`;
+						}
+						if(json.length > 0) {
+							json = json + ",\n\t\t\t";
+						}
+						json = `${json}"${variable[1]}": "§$str${variable[1]}$§"`;
+
+						x = start_column.exec(dart_text);
+					}
+					json = json.trim();
+					
+					str = `${str}
+						
+		strJson = §START_JSON§
+		{
+			${json}
+		}
+		§END_JSON§
+			
+			`;
+
+					complete_function =  complete_function + `
+	${class_string}
+	if (nTable == ${table}) {
+${str}
+	};
+`;
+				}
+
+				complete_function = `// Konvertiert jede Tabelle zu entsprechenden JSON Objekt
+FUNCTION: CString GetDataAsJson(CTable& tData, int nRow, int nTable, int nGuidColumn);
+	CString strJson;
+		${complete_function}
+
+	funcreturn strJson;
+ENDFUNCTION;
+
+`;
+
+				window.activeTextEditor.edit((editor) => {
+					editor.insert(window.activeTextEditor.selection.active, complete_function);
+				});
+			}
+		}
 	}));
 
 	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
