@@ -15,7 +15,7 @@ All notable changes to this project will be documented in this file.
   - .futurec/snippetForScript.txt
   - .futurec/snippetForHook.txt
 - Ctrl + space now works for most of the functions to get the parameterlist (before that you had to write the function again to get the popup)
-- many other changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/1d023345d91cf9b1922caeaff4120b37ff92ff45), [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/637b40b42eadd9832c28066c2ac7a18fc2574a84) for more information
+- many other changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/7258e0e01caefad41eb95dfdaf180301355ab68f) for more information
 
 
 ## [1.2.0] - 18.04.2021
