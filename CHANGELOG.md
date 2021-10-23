@@ -2,6 +2,22 @@
 All notable changes to this project will be documented in this file.
 
 
+## [1.3.0] - 23.10.2021
+- new option inside scriptautocompletedefs.json for marking parameters as optional with an '?'. All parameters are by default required
+  - an example would be: be sure to adjust the "signature" value inside the json  
+  ```futurec  
+  "signature": "CString strValue, BOOL bSetNoBlank?, BOOL bSetZeroForBlank?, BOOL bShowZeroDate?, int nLanguage?"  
+  ```  
+  - errormessage if a function is used incorrectly
+- massive performance-boost because documents are synced incremental now
+- if a function from the namespace 'S' is used always after the first paramter the importattributes gets opened
+- new files for snippets instead of hardcoded ones. These are located at ".futurec"
+  - .futurec/snippetForScript.txt
+  - .futurec/snippetForHook.txt
+- Ctrl + space now works for most of the functions to get the parameterlist (before that you had to write the function again to get the popup)
+- many other changes see [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/1d023345d91cf9b1922caeaff4120b37ff92ff45), [Commit](https://github.com/Muraxon/FuturecLanguageServer/commit/637b40b42eadd9832c28066c2ac7a18fc2574a84) for more information
+
+
 ## [1.2.0] - 18.04.2021
 - changed xml-file to json-file for better readability and maintainability
 - implemented simple diagnostic

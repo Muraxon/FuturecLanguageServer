@@ -66,7 +66,7 @@ let GlobalManager :DocumentManager = new DocumentManager();
 export let documentSettings: Map<string, Thenable<ExampleSettings>> = new Map();
 
 export let CurrentCompletionCharacter :string|undefined = undefined;
-
+let currentWorkingScript = null;
 
 connection.onInitialize((params: InitializeParams) => {
 	const capabilities = params.capabilities;
@@ -88,7 +88,7 @@ connection.onInitialize((params: InitializeParams) => {
 
 	return {
 		capabilities: {
-			textDocumentSync: TextDocumentSyncKind.Full,
+			textDocumentSync: TextDocumentSyncKind.Incremental,
 			// Tell the client that the server supports code completion
 			completionProvider: {
 				resolveProvider: false,
@@ -202,6 +202,7 @@ connection.onRequest("custom/GetScriptNumber", (params :any) :{number:number, na
 	if(doc) {
 		let script = GlobalAnalyzer.getEditedScript(params.pos, doc, true);
 		if(script) {
+			currentWorkingScript = script;
 			return {
 				number: script.m_scriptnumber,
 				name: script.m_ScriptName
@@ -323,6 +324,11 @@ connection.onRequest("custom/jump.to.start.of.script", (param :TextDocumentPosit
 		return TextParser.getScriptStart(doc, param.position)[0];
 	}
 	return param.position;
+});
+
+connection.onNotification("custom/mainscript", (value :{scriptnumber :string}) => {
+	
+
 })
 
 async function validateTextDocument(textDocument: TextDocument): Promise<void> {
@@ -337,10 +343,7 @@ async function validateTextDocument(textDocument: TextDocument): Promise<void> {
 
 connection.onDidChangeWatchedFiles(_change => {
 
-	connection.sendNotification("custom/getParserXML");
-
-	// Monitored files have change in VSCode
-	console.log('We received an file change event');
+	
 
 });
 

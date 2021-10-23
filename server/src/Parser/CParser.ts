@@ -1,4 +1,4 @@
-import { Diagnostic, DiagnosticSeverity, DiagnosticTag, Position, SignatureInformation, URI } from 'vscode-languageserver/node';
+import { Diagnostic, DiagnosticSeverity, DiagnosticTag, MarkupContent, Position, SignatureInformation, URI } from 'vscode-languageserver/node';
 import {
 	TextDocument
 } from 'vscode-languageserver-textdocument';
@@ -52,6 +52,8 @@ interface ScriptInformation {
 }
 
 export class CParser {
+	
+
 	getToken(token :Token[], pos :number) {
 		if(token[pos]) {
 			return token[pos];
@@ -271,10 +273,106 @@ export class CParser {
 		if(this.isControlChar(text) || this.isKeyword(text) || this.IsType(text) || this.isPredefinedContext(text)) {
 			return false;
 		}
-		if(text.charAt(0).match(/[0-9]/) || text.charAt(0) == "\"") {
+		if(this.isLiteral(text)) {
 			return false;
 		}
 		return true;
+	}
+	
+	isLiteral(text :string) {
+		if(text.charAt(0).match(/[0-9]/) || text.charAt(0) == "\"") {
+			return true;
+		}
+		return false;
+	}
+
+	parseParameterlist(tokens :Token[],
+		index :number,
+		definedVariables :Map<string, Variable>[],
+		func :SignatureInformation,
+		funcToken :Token,
+		scopeLevel :number,
+		isIncludescript :boolean,
+		hasIncludescript :boolean,
+		diag :Diagnostic[],
+		doc :TextDocument,
+		scriptPos :Position) : {new_index:number, error :string, param :number} {
+
+		let paranthScope = 1;
+		let newToken = this.getToken(tokens, index + 1);
+		let param = newToken.m_Text == ")" ? 0 : 1;
+		index++;
+		let missingParameters = "";
+
+		while(paranthScope >= 1) {
+			let token = this.getToken(tokens, index);
+			if(token.m_Text == "(") {
+				paranthScope++;
+			} else if(token.m_Text == ")") {
+				paranthScope--;
+			}
+			else if(token.m_Text == ";") {
+				break;
+			}
+			else if(token.m_Text == "," && paranthScope == 1) {
+				let variableToken = this.getToken(tokens, index + 1);
+				if(this.IsVariable(variableToken.m_Text)) {
+					index++;
+					let variable = this.isVariableDefined(variableToken.m_Text, definedVariables, scopeLevel);
+					if(!variable) {
+						let errorText = "'"+variableToken.m_Text+"' possibly not defined, maybe";
+						let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
+						if(hasIncludescript) {
+							severity = DiagnosticSeverity.Information;
+							errorText += " it is defined in an includescript, or";
+						}
+						this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, variableToken, isIncludescript, severity);
+					}
+					param++;
+				} else if(this.isLiteral(variableToken.m_Text)) {
+					index++;
+					param++;
+				}
+			}
+			index++;
+		}
+		let token = this.getToken(tokens, index);
+		if(!this.isControlChar(token.m_Text)) {
+			this.addError("';' is missing.", diag, doc, scriptPos, this.getToken(tokens, index - 1), isIncludescript);
+		} else {
+			index--;
+		}
+
+		let j = func.parameters ? func.parameters.length-1 : -1;
+		while(func.parameters && j >= param && func.parameters.length > 0) {
+			let documentation = <MarkupContent|undefined>func.parameters[j].documentation;
+			if(documentation && documentation.value.toString().endsWith("(required)")) {
+				if(missingParameters.length > 0) {
+					missingParameters = "," + missingParameters;
+				}
+				missingParameters = (j + 1).toString() + missingParameters;
+			}
+			j--;
+		}
+
+			
+		if(missingParameters.length > 0) {
+			let errorMessage = "Too few arguments for function '"+funcToken.m_Text+"'. Parameters " + missingParameters + " are required to run this function";
+			if(missingParameters.search(",") < 0) {
+				errorMessage = "Too few arguments for function '"+funcToken.m_Text+"'. Parameter " + missingParameters + " is required to run this function";
+			}
+			this.addError(errorMessage, diag, doc, scriptPos, funcToken, isIncludescript);
+		}
+
+		if(func.parameters && param > func.parameters.length) {
+			this.addError("Too many arguments for function '"+funcToken.m_Text+"'. Maximum of "+func.parameters.length+" arguments expected and "+param+" given.", diag, doc, scriptPos, funcToken, isIncludescript);
+		}
+
+		return {
+			error: missingParameters,
+			new_index: index,
+			param: param
+		}
 	}
 
 	AddStandardVariables(vars :Map<string, Variable>) {
@@ -391,7 +489,7 @@ export class CParser {
 			if(num != 0) {
 				this.addError("Mainscript " + script.m_MainScript.m_scriptnumber + " has some errors in it. Diagnostics after this point cannot be fully trusted", diag, doc, scriptPos, {m_Range: {end: 0, start: 0}, m_Text: ""}, isIncludescript, DiagnosticSeverity.Information);
 			}
-		} 
+		}
 
 		let savedScopeLevel :number[] = [];
 		let addNextTimeSameScope :boolean[] = [];
@@ -440,69 +538,69 @@ export class CParser {
 						if(!this.IsType(thirdToken.m_Text)) {
 							this.addError("Type (CString|int|double|CTable|CDateTime|CMoney|BOOL) was expected '"+thirdToken.m_Text+"'", diag, doc, scriptPos, thirdToken, isIncludescript);
 						} else {
-							let functionText = tokens[i + 3].m_Text;
+							let functionText = this.getToken(tokens, i + 3).m_Text;
 							functionReturnType = thirdToken.m_Text;
 
 							let index :number = this.isFunctionDefined(functionText, definedFunctions, scopeLevel);
 							if(index >= 0) {
-								this.addError("function '"+functionText+"' already defined", diag, doc, scriptPos, tokens[i + 3], isIncludescript, DiagnosticSeverity.Information);
+								this.addError("function '"+functionText+"' already defined", diag, doc, scriptPos, this.getToken(tokens, i + 3), isIncludescript, DiagnosticSeverity.Information);
 							} else {
 								definedFunctions[scopeLevel - 1].push(functionText);
 							}
 
-							if(tokens[i + 4].m_Text != "(") {
-								this.addError("'(' expected", diag, doc, scriptPos, tokens[i + 4], isIncludescript);
+							if(this.getToken(tokens, i + 4).m_Text != "(") {
+								this.addError("'(' expected", diag, doc, scriptPos, this.getToken(tokens, i + 4), isIncludescript);
 							} else {
 								let j = i + 5;
 								let success = false;
-								if(tokens[j].m_Text == ")") {
+								if(this.getToken(tokens, j).m_Text == ")") {
 									j++;
 									success = true;
 								} else {
 
 									while(true) {
-										let typeText = tokens[j].m_Text;
+										let typeText = this.getToken(tokens, j).m_Text;
 										if(!this.IsType(typeText)) {
-											this.addError("type expected '"+typeText+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+											this.addError("type expected '"+typeText+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 											break;
 										}
 										j++;
 										
 										
-										if(tokens[j].m_Text == "&") {
+										if(this.getToken(tokens, j).m_Text == "&") {
 											j++;
-											if(!this.IsVariable(tokens[j].m_Text)) {
-												this.addError("variablename expected '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+											if(!this.IsVariable(this.getToken(tokens, j).m_Text)) {
+												this.addError("variablename expected '"+this.getToken(tokens, j).m_Text+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 												break;
 											}
-											if(definedVariables[scopeLevel].get(tokens[j].m_Text)) {
-												this.addError("Another parameter is already named like this '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+											if(definedVariables[scopeLevel].get(this.getToken(tokens, j).m_Text)) {
+												this.addError("Another parameter is already named like this '"+this.getToken(tokens, j).m_Text+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 												break;
 											} else {
-												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, script.m_scriptnumber, tokens[j]));	
+												definedVariables[scopeLevel].set(this.getToken(tokens, j).m_Text, new Variable(this.getToken(tokens, j).m_Text, scopeLevel, typeText, script.m_scriptnumber, this.getToken(tokens, j)));	
 											}
 										} else {
-											if(!this.IsVariable(tokens[j].m_Text)) {
-												this.addError("variablename expected '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+											if(!this.IsVariable(this.getToken(tokens, j).m_Text)) {
+												this.addError("variablename expected '"+this.getToken(tokens, j).m_Text+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 												break;
 											}
-											if(definedVariables[scopeLevel].get(tokens[j].m_Text)) {
-												this.addError("Another parameter is already named like this '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+											if(definedVariables[scopeLevel].get(this.getToken(tokens, j).m_Text)) {
+												this.addError("Another parameter is already named like this '"+this.getToken(tokens, j).m_Text+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 												break;
 											} else {
-												definedVariables[scopeLevel].set(tokens[j].m_Text, new Variable(tokens[j].m_Text, scopeLevel, typeText, script.m_scriptnumber, tokens[j]));	
+												definedVariables[scopeLevel].set(this.getToken(tokens, j).m_Text, new Variable(this.getToken(tokens, j).m_Text, scopeLevel, typeText, script.m_scriptnumber, this.getToken(tokens, j)));	
 											}
 										}
 										
 										
 										j++;
 										
-										if(tokens[j].m_Text == ")") {
+										if(this.getToken(tokens, j).m_Text == ")") {
 											j++;
 											success = true;
 											break;
-										} else if(tokens[j].m_Text != ",") {
-											this.addError("',' or ')' expected '"+tokens[j].m_Text+"'", diag, doc, scriptPos, tokens[j], isIncludescript);
+										} else if(this.getToken(tokens, j).m_Text != ",") {
+											this.addError("',' or ')' expected '"+this.getToken(tokens, j).m_Text+"'", diag, doc, scriptPos, this.getToken(tokens, j), isIncludescript);
 											break;
 										}
 										j++;
@@ -586,45 +684,9 @@ export class CParser {
 									if(!func) {
 										this.addError("Function '"+thirdToken.m_Text+"' is not a parserfunction from the global namespace '"+currentTokenText+"'", diag, doc, scriptPos, thirdToken, isIncludescript);
 									} else {
-										let paranthScope = 1;
-										let param = this.getToken(tokens, i + 1).m_Text == ")" ? 0 : 1;
-										i++;
-										while(paranthScope >= 1) {
-											let token = this.getToken(tokens, i);
-											if(token.m_Text == "(") {
-												paranthScope++;
-											} else if(token.m_Text == ")") {
-												paranthScope--;
-											}
-											else if(token.m_Text == ";") {
-												break;
-											}
-											else if(token.m_Text == "," && paranthScope == 1) {
-												param++;
-											} else if(this.IsVariable(token.m_Text)) {
-												let variable = this.isVariableDefined(token.m_Text, definedVariables, scopeLevel);
-												if(!variable) {
-													let errorText = "'"+token.m_Text+"' possibly not defined, maybe";
-													let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
-													if(hasIncludescript) {
-														severity = DiagnosticSeverity.Information;
-														errorText += " it is defined in an includescript, or";
-													}
-													this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, token, isIncludescript, severity);
-												}
-											}
-											i++;
-										}
-										let token = this.getToken(tokens, i);
-										if(!this.isControlChar(token.m_Text)) {
-											this.addError("';' is missing.", diag, doc, scriptPos, this.getToken(tokens, i - 1), isIncludescript);
-										} else {
-											i--;
-										}
-										
-										if(func.parameters && param > func.parameters.length) {
-											this.addError("Too many arguments for function '"+thirdToken.m_Text+"'. Maximum of "+func.parameters.length+" arguments expected and "+param+" given.", diag, doc, scriptPos, thirdToken, isIncludescript);
-										}
+
+										let parameterListError = this.parseParameterlist(tokens, i, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
+										i = parameterListError.new_index;
 									}
 								}
 							}
@@ -798,7 +860,7 @@ export class CParser {
 							}
 							try {
 								JSON.parse(json);
-							} catch (error) {
+							} catch (error :any) { 
 								this.addError(error.message, diag, doc, scriptPos, secondToken,isIncludescript);
 							}
 						}
@@ -1063,40 +1125,17 @@ export class CParser {
 									}
 								}
 
-								let fourthToken = this.getToken(tokens,i + 3);
-								if(fourthToken.m_Text != "(") {
-									i += 3;
-									this.addError("after Parserfunction must follow an Paranthesis", diag, doc, scriptPos, fourthToken, isIncludescript);
-								} else {
-									i += 4;
-									let paranthScope = 1;
-									while(paranthScope >= 1) {
-										let token = this.getToken(tokens, i);
-										if(token.m_Text == "(") {
-											paranthScope++;
-										} else if(token.m_Text == ")") {
-											paranthScope--;
-										} else if(this.IsVariable(token.m_Text)) {
-											let variable = this.isVariableDefined(token.m_Text, definedVariables, scopeLevel);
-											if(!variable) {
-												let errorText = "'"+token.m_Text+"' possibly not defined, maybe";
-												let severity :DiagnosticSeverity = DiagnosticSeverity.Information;
-												if(hasIncludescript) {
-													severity = DiagnosticSeverity.Information;
-													errorText += " it is defined in an includescript, or";
-												}
-												this.addError(errorText + " this script gets included somewhere. But resolving this is not yet supported.", diag, doc, scriptPos, token, isIncludescript, severity);
-											}
-										}
-										i++;
-									}
-									let token = this.getToken(tokens, i);
-									if(!this.isControlChar(token.m_Text)) {
-										this.addError("';' is missing.", diag, doc, scriptPos, this.getToken(tokens, i - 1), isIncludescript);
+								if(func) {
+									
+									let fourthToken = this.getToken(tokens,i + 3);
+									if(fourthToken.m_Text != "(") {
+										i += 3;
+										this.addError("after Parserfunction must follow an Paranthesis", diag, doc, scriptPos, fourthToken, isIncludescript);
 									} else {
-										i--;
+										let parameterListError = this.parseParameterlist(tokens, i + 3, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
+										i = parameterListError.new_index;
 									}
-							}
+								}
 							}
 						} else {
 							if(!this.isControlChar(secondToken.m_Text)) {
@@ -1123,7 +1162,7 @@ export class CParser {
 				}
 			}
 
-		} catch (token) {
+		} catch (token :any) {
 			if(token.m_Text != ";") {
 				this.addError("';' expected at the end of the script", diag, doc, scriptPos, token, isIncludescript);	
 			}

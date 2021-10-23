@@ -5,14 +5,20 @@ import {
 } from 'vscode-languageserver-textdocument';
 
 export class TextParser {
-	static getWordAtPosition(pos :Position, doc :TextDocument, functionCompletion :boolean = false) :CursorPositionInformation{
+	static getWordAtPosition(pos :Position, doc :TextDocument, functionCompletion :boolean = false, signatureHelp :boolean = false) :CursorPositionInformation{
 
 		let text = doc.getText({
 			start: {character: 0, line: pos.line},
 			end: {character: 10000, line: pos.line}
 		});
 
-		
+		if(signatureHelp) {
+			while(text.search(", ")>=0) {
+				text = text.replace(", ", ",");
+			}
+
+		}
+
 		let offset = pos.character;
 		let char = text.charAt(pos.character);
 
@@ -38,9 +44,9 @@ export class TextParser {
 		let includescriptOffset = offset;
 
 		while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
-		(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-		(char != '\"') && (char != '-') && (char != '+') && (char != '#') && (char != '$') && (char != '{') && 
-		(char != ';') && (char != '}') && (char != '/'))
+		(char != "(" || (char == "(" && signatureHelp)) && (char != '[') && (char != ']') && (char != '!') && (char != "," || (char == "," && signatureHelp)) && 
+		(char != '\"' || (char == '\"' && signatureHelp)) && (char != '-') && (char != '+') && (char != '#') && (char != '$') && (char != '{') && 
+		(char != ';') && (char != '}') && (char != '/') && (char != '='))
 		{
 			if(char == ':') {
 				isfunction = true;
@@ -59,9 +65,9 @@ export class TextParser {
 
 					} else {
 						while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
-						(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-						(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
-						(char != ';') && (char != '}') && (char != '/')) {
+						(char != "(" || (char == "(" && signatureHelp)) && (char != '[') && (char != ']') && (char != '!') && (char != "," || (char == "," && signatureHelp)) && 
+						(char != '\"' || (char == '\"' && signatureHelp)) && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
+						(char != ';') && (char != '}') && (char != '/') && (char != '=')) {
 
 							offset--;
 							char = text.charAt(offset);
@@ -71,9 +77,9 @@ export class TextParser {
 					}
 				} else {
 					while((offset >= 0) && (char != ' ') && (char != '\t') && (char != '\n') && 
-					(char != '(') && (char != '[') && (char != '!') && (char != ',') && 
-					(char != '\"') && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
-					(char != ';') && (char != '}') && (char != '/')) {
+					(char != "(" || (char == "(" && signatureHelp)) && (char != '[') && (char != ']') && (char != '!') && (char != "," || (char == "," && signatureHelp)) && 
+					(char != '\"' || (char == '\"' && signatureHelp)) && (char != '-') && (char != '+')  && (char != '#') && (char != '$') && (char != '{') && 
+					(char != ';') && (char != '}') && (char != '/') && (char != '=')) {
 
 						offset--;
 						char = text.charAt(offset);

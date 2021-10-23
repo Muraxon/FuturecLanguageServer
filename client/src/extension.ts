@@ -3,8 +3,9 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-import { env } from 'node:process';
+import { readFileSync, writeFile } from 'fs';
 import * as path from 'path';
+import { TextEncoder } from 'util';
 import { workspace, 
 	ExtensionContext, 
 	SignatureHelp, 
@@ -18,7 +19,8 @@ import { workspace,
 	Range,
 	TextEditorEdit,
 	ProgressLocation,
-	Selection
+	Selection,
+	Uri
 } from 'vscode';
 
 import {
@@ -32,9 +34,10 @@ import {
 
 let client: LanguageClient;
 let x: SignatureHelp | null = null;
+let notYetShown :boolean = true;
 let lastPos: Position | null = null;
 
-let resimportattributes = workspace.findFiles("**/*importattributes*");
+let resimportattributes = workspace.findFiles("Standard/*importattributes*");
 
 let docDecoration = window.createTextEditorDecorationType({
 	color: "grey"
@@ -44,7 +47,7 @@ let docDecoration2 = window.createTextEditorDecorationType({
 	color: "#4EC9B0"
 })
 
-export function activate(context: ExtensionContext) {
+export async function activate(context: ExtensionContext) {
 	// The server is implemented in node
 	let serverModule = context.asAbsolutePath(
 		path.join('server', 'out', 'server.js')
@@ -124,7 +127,7 @@ export function activate(context: ExtensionContext) {
 						items.forEach(element => {
 							if((element.kind == CompletionItemKind.Method || element.kind == CompletionItemKind.Snippet || element.kind == CompletionItemKind.Text)) {
 								if(completion == "Signatur") {
-									element.insertText = element.label;
+									element.insertText = <string>element.label;
 								}
 							}
 	
@@ -141,12 +144,13 @@ export function activate(context: ExtensionContext) {
 				let ShowSignatureOrSnippets = config.get<string>("future_c.ShowSignatureOrSnippets");
 				if(!ShowSignatureOrSnippets) {
 					x = null;
+					notYetShown = true;
 					return null;
 				}
 
 				if (!x || lastPos.line != pos.line) {
 					x = null;
-
+					notYetShown = true;
 					lastPos = pos;
 					let ret = await next(doc, pos, context, token);
 					x = ret;
@@ -162,27 +166,40 @@ export function activate(context: ExtensionContext) {
 					let isInsideString = false;
 					let activeParam = 0;
 					let nBracePairs = 0;
+					let startFirstParameter = 0;
+					let endFirstParameter = 0;
 					while(i < lineBeforeCursor.length) {
 						let char = lineBeforeCursor.charAt(i++);
 						if(char == "\"") {
 							isInsideString = !isInsideString;
 						} else if(char == "(" && !isInsideString){
 							nBracePairs++;
+
+							if(activeParam == 0) {
+								startFirstParameter = i;
+							}
 						} 
 						else if(char == ")" && !isInsideString) {
 							nBracePairs--;
 						}
 						else if(char == "," && !isInsideString) {
+							if(activeParam == 0) {
+								endFirstParameter = i;
+							}
 							activeParam++;
 						}
 					}
-					
-					let exit = lineBeforeCursor.search(/\b[cC]all:.*\(.*\)/);
-					let exit2 = lineBeforeCursor.search(/\b[cC]all:.*\(/);
-					let exit3 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(/);
-					let exit4 = lineBeforeCursor.search(/\b(S|D|P|H|F|[a-zA-ZöÖäÄüÜ_1-9]*)\..*\(.*\)/);
 
-					if (((exit >= 0 || exit2 < 0) && (exit3 < 0 || exit4 >= 0)) || (nBracePairs == 0) || (activeParam >= x.signatures[0].parameters.length)) {
+					if(x.signatures[x.activeSignature].label.startsWith("S.") && endFirstParameter > 0) {
+						let firstParameter = Number.parseInt(lineBeforeCursor.substring(startFirstParameter, endFirstParameter - 1));
+						if(!isNaN(firstParameter) && firstParameter > 10) {
+							commands.executeCommand("Show.columns", firstParameter);
+							notYetShown = false;
+						}
+					}
+
+					
+					if ((nBracePairs == 0) || (activeParam >= x.signatures[0].parameters.length)) {
 						x = null;
 						return null;
 					}
@@ -205,6 +222,63 @@ export function activate(context: ExtensionContext) {
 		serverOptions,
 		clientOptions
 	);
+
+	// read snippet files in
+	let snippetForScript = await workspace.findFiles(".futurec/snippetForScript.txt");
+	let snippetForHook = await workspace.findFiles(".futurec/snippetForHook.txt");
+
+	let snippetTextForScript = "";
+	let snippetTextForHook = "";
+
+
+	if(snippetForScript.length <= 0) {
+		snippetTextForScript = `
+///////////////////////////////////////////////////////////////////////////////
+
+	CHANGE:	$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR	\${6:Name}	$LINE_COMMENT AP-ID:\${7:ID}
+	\${8:Erstellt \${9:asdasd}}
+
+///////////////////////////////////////////////////////////////////////////////
+SCRIPT:scriptNumber,scriptName,0,0,0,\${3:Verzeichnis},\${4:Scripticon},\${5:Admintyp}
+
+	H.LockThisScript();
+	S.RequestSaveAndUnlock(m_TabNr, m_RecNr);
+	S.LockActualRecord();
+
+	$0
+
+	S.UpdateActualRecord();
+	S.UnlockActualRecord();
+
+ENDSCRIPT
+///////////////////////////////////////////////////////////////////////////////`;
+		
+	} else {
+		snippetTextForScript = readFileSync(snippetForScript[0].fsPath).toString();
+	}
+
+
+	if(snippetForHook.length <= 0) {
+		snippetTextForHook = `
+//////////////////////////////////////////////////////////////////////////////
+
+	CHANGE:	$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR	\${4:Name}	$LINE_COMMENT AP-ID:\${5:ID}
+	\${6:Erstellt \${7:asdasd}}
+
+//////////////////////////////////////////////////////////////////////////////
+INSERTINTOSCRIPT:scriptNumber,hookname
+
+	$0
+
+ENDSCRIPT
+//////////////////////////////////////////////////////////////////////////////`;
+		
+	} else {
+		snippetTextForHook = readFileSync(snippetForHook[0].fsPath).toString();
+
+	}
+
+
 
 	client.onReady().then(() => {
 		client.onNotification("custom/getFilenames", async () => {
@@ -252,6 +326,15 @@ export function activate(context: ExtensionContext) {
 		});
 	
 	});
+
+	context.subscriptions.push(commands.registerCommand("Show.Question.Which.Script.Working.On", () => {
+		window.showInputBox({
+			ignoreFocusOut: true,
+			prompt: "Für welches Haupskript wird gerade gearbeitet?",
+		}).then((value) => {
+			client.sendNotification("custom/mainscript", {scriptnumber: value});
+		})
+	}));
 
 	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
 		
@@ -502,22 +585,11 @@ ENDFUNCTION;
 						return pos.then((bothPos :any) => {
 							if(bothPos.posScript.line >= 0) {
 								progress.report({ message: "Datei wird geöffnet."});
-								let snippet = new SnippetString(
-									["",
-									"//////////////////////////////////////////////////////////////////////////////",
-									"",
-									"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
-									"\t\t${6:Erstellt ${7:asdasd}}",
-									"",
-									"//////////////////////////////////////////////////////////////////////////////",
-									"INSERTINTOSCRIPT:"+scriptNumber+","+hookname,
-									"",
-									"\t$0",
-									"",
-									"ENDSCRIPT",
-									"//////////////////////////////////////////////////////////////////////////////",
-									""
-									].join("\n"));
+
+								let snippetTextForHookReal = snippetTextForHook;
+								snippetTextForHookReal = snippetTextForHookReal.replace("scriptNumber", scriptNumber.toString());
+								snippetTextForHookReal = snippetTextForHookReal.replace("hookname", hookname);
+								let snippet = new SnippetString(snippetTextForHookReal);
 			
 									
 								window.activeTextEditor.edit((editbuilder) => {
@@ -620,29 +692,10 @@ ENDFUNCTION;
 				return pos.then((bothPos :any) => {
 					if(bothPos.posScript.line >= 0) {
 
-						let snippet  = new SnippetString([
-							"",
-							"///////////////////////////////////////////////////////////////////////////////",
-							"",
-							"CHANGE:\t$CURRENT_DATE.$CURRENT_MONTH.$CURRENT_YEAR\t${4:Name}\t$LINE_COMMENT AP-ID:${5:ID}",
-							"\t\t${6:Erstellt ${7:asdasd}}",
-							"",
-							"///////////////////////////////////////////////////////////////////////////////",
-							"SCRIPT:"+m[1]+","+m[2]+",0,0,0,${3:Scripticon}",
-							"",
-							"\tH.LockThisScript();",
-							"\tS.RequestSaveAndUnlock(m_TabNr, m_RecNr);",
-							"\tS.LockActualRecord();",
-							"",
-							"\t$0",
-							"",
-							"\tS.UpdateActualRecord();",
-							"\tS.UnlockActualRecord();",
-							"",
-							"ENDSCRIPT",
-							"///////////////////////////////////////////////////////////////////////////////",
-							""
-						].join("\n"));
+						let snippetTextForScriptReal = snippetTextForScript;
+						snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptNumber", m[1]);
+						snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptName", m[2]);
+						let snippet = new SnippetString(snippetTextForScriptReal);
 	
 						let positionScript = new Position(bothPos.posScript.line, bothPos.posScript.character);
 						let range = new Range(positionScript, positionScript);

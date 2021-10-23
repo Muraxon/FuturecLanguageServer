@@ -37,7 +37,7 @@ export function OnSignature(docs :Map<string, TextDocument>, curDoc :TextDocumen
 	i = stringBeforeCursor.split(",").length - 1;
 
 	pos.character -= 2;
-	let word = TextParser.getWordAtPosition(pos, curDoc);
+	let word = TextParser.getWordAtPosition(pos, curDoc, false, true);
 	let signatureHelp :SignatureHelp;
 
 	if(word.isValid() || foundFunction.length > 0) {

@@ -50,6 +50,7 @@ export class ParserFunctions {
 
 	addEntries(jsonObject :any, root_path :string, functionSignature :Map<string, SignatureInformation>|null, functionHoverString :Map<string, string>, completionItems :CompletionItem[]) {
 		for(let functionName in jsonObject) {
+			let functionNamespace = "";
 			let sigInfo :SignatureInformation;
 			let hoverString :string = "";
 			let completionItem :CompletionItem;
@@ -62,6 +63,7 @@ export class ParserFunctions {
 			let signature = "";
 			let signaturePlain = [];
 			let completionText = "";
+			let isRequired = false;
 			for(let y in singleFunction) {
 				if(hoverString.length > 0 && y != "context") { hoverString = hoverString + "  \n"; }
 				if(y == "notes") {
@@ -74,7 +76,7 @@ export class ParserFunctions {
 					returnValue = "`@return " + this.getMappedReturnValue(singleFunction[y]) + "`";
 					returnValuePlain = this.getMappedReturnValue(singleFunction[y]);
 				} else if(y == "signature") {
-					if((<string>singleFunction[y]).length > 3) {
+					if((<string>singleFunction[y]).length > 3 && <string>singleFunction[y] != "None") {
 						signature = "`" + singleFunction[y] + "`";
 						signaturePlain = singleFunction[y].split(",");
 					} else {
@@ -85,6 +87,8 @@ export class ParserFunctions {
 					completionText = singleFunction[y];
 				} else if(y == "keyword") {
 
+				} else if(y == "context") {
+					functionNamespace = singleFunction[y];
 				}
 			}
 			hoverString = signature + "  \n___  \n" + returnValue + "  \n___  \n" + notes;
@@ -103,17 +107,24 @@ export class ParserFunctions {
 
 			let paramInfo :ParameterInformation[] = [];
 			for(let x in signaturePlain) {
+				let required :string = <string>signaturePlain[x];
+				if(!required.endsWith("?")) {
+					required = " (required)";
+				} else {
+					required = "";
+				}
+
 				paramInfo.push({
 					label: signaturePlain[x],
 					documentation: {
-						value: "`current: " + signaturePlain[x] + "`",
+						value: "`current: " + signaturePlain[x] + "`"+required,
 						kind: MarkupKind.Markdown
 					}
 				})
 			}
 
 			sigInfo = {
-				label: returnValuePlain + " " + functionName,
+				label: functionNamespace + "." + functionName + " -> " + returnValuePlain,
 				documentation: { 
 					kind: MarkupKind.Markdown,
 					value: signaturePlain.join("  \n") + "  \n___  \n" + notes

@@ -164,7 +164,7 @@ export function OnHover(docs :Map<string, TextDocument>, curDoc :TextDocument, p
 									}
 								}
 							}
-						} catch (error) {
+						} catch (error :any) {
 							hoverString = error;
 						}
 			
