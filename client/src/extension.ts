@@ -325,599 +325,609 @@ ENDSCRIPT
 			}
 		});
 	
-	});
-
-	context.subscriptions.push(commands.registerCommand("Show.Question.Which.Script.Working.On", () => {
-		window.showInputBox({
-			ignoreFocusOut: true,
-			prompt: "Für welches Haupskript wird gerade gearbeitet?",
-		}).then((value) => {
-			client.sendNotification("custom/mainscript", {scriptnumber: value});
-		})
-	}));
-
-	context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
-		
-		let found = false;
-		(await resimportattributes).forEach((value) => {
-			if(found) {  return; }
-
-			workspace.openTextDocument(value).then((value) => {
-
-				let text = value.getText();
-				
-				let pos = text.search(new RegExp("^" + args + "\\t5", "gm"));
-				if(pos >= 0) {
-					found = true;						
-					let pos2 = value.positionAt(pos);
-					let range = value.getWordRangeAtPosition(pos2);
-					window.showTextDocument(value, ViewColumn.Beside, true).then((value) => {
-						value.revealRange(range, TextEditorRevealType.AtTop);
-					});
-				}
-			});
-		});
-	}));
-
-	context.subscriptions.push(commands.registerCommand("Check.Skript.Syntax", () => {
-		let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
-		let uri = window.activeTextEditor.document.uri;
-
-		window.withProgress({location: ProgressLocation.Notification, cancellable: false}, (progress, token) => {
-			progress.report({
-				message: "Scriptcheck in progress. This may take a while."
-			});
-			return client.sendRequest("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
-		});
-		
-	}));
-
-	context.subscriptions.push(commands.registerCommand("create.dart.definition", async () => {
-		let uri = await window.showOpenDialog({
-			canSelectFolders: false,
-			canSelectMany: false
-		});
-
-		if(uri && uri.length > 0) {
-			let file = uri[0];
-			let dart_doc = await workspace.openTextDocument(file);
-			
-			let dart_text = dart_doc.getText();
-			if(dart_text.length > 0) {
-				let start_table = /@FutureTableNumber\(([0-9]+)\)/gm;
-
-				let tables = [];
-
-				let m = start_table.exec(dart_text)
-				while(m) {
-					tables.push({
-						start_of_class: m.index,
-						table: m[1]
-					})
-					m = start_table.exec(dart_text);
-				}
-
-				let complete_function = "";
-				for(let i = 0; i < tables.length; i++) {
-					let str = "";
-					let obj = tables[i];
-					let start_of_class = obj.start_of_class;
-					let table = obj.table;
-
-					let class_pos = dart_doc.positionAt(start_of_class + 5);
-					let class_line = dart_doc.lineAt(class_pos.line);
-					let class_line_prev = dart_doc.lineAt(class_pos.line - 1);
-					let class_line_after = dart_doc.lineAt(class_pos.line + 1);
-
-					let class_string = "//" + class_line_prev.text.trim() + "\n";
-					class_string += "\t//" + class_line.text.trim() + "\n";
-					class_string += "\t//" + class_line_after.text.trim();
-
-					let end_of_class = dart_text.indexOf("}", start_of_class + 1);
-					let json = "";
-					
-					let start_column = /@FutureColumnNumber\(([0-9]+)\)/gm;
-					start_column.lastIndex = start_of_class;
-
-					let x = start_column.exec(dart_text);
-					while(x && end_of_class > x.index && start_of_class < x.index) {
-						let pos = dart_doc.positionAt(x.index);
-						let line_after = dart_doc.lineAt(pos.line + 1);
-						let current_line = dart_doc.lineAt(pos.line);
-						let line_prev = dart_doc.lineAt(pos.line - 1);
-
-						str = str + "\n\t\t//" + line_prev.text.trim();
-						str = str + "\n\t\t//" + current_line.text.trim();
-						str = str + "\n\t\t//" + line_after.text.trim();
-
-						let var_reg = /.*get ([a-zA-ZöäüÖÄÜ_0-9]+)/gm;
-						let variable = var_reg.exec(line_after.text);
-						if(variable) {
-							str = str + "\n" + "\t\tCString str" + variable[1] + ` = tData.GetElementSTRING(${x[1]}, nRow);\n`;
-						}
-						if(json.length > 0) {
-							json = json + ",\n\t\t\t";
-						}
-						json = `${json}"${variable[1]}": "§$str${variable[1]}$§"`;
-
-						x = start_column.exec(dart_text);
-					}
-					json = json.trim();
-					
-					str = `${str}
-						
-		strJson = §START_JSON§
-		{
-			${json}
-		}
-		§END_JSON§
-			
-			`;
-
-					complete_function =  complete_function + `
-	${class_string}
-	if (nTable == ${table}) {
-${str}
-	};
-`;
-				}
-
-				complete_function = `// Konvertiert jede Tabelle zu entsprechenden JSON Objekt
-FUNCTION: CString GetDataAsJson(CTable& tData, int nRow, int nTable, int nGuidColumn);
-	CString strJson;
-		${complete_function}
-
-	funcreturn strJson;
-ENDFUNCTION;
-
-`;
-
-				window.activeTextEditor.edit((editor) => {
-					editor.insert(window.activeTextEditor.selection.active, complete_function);
-				});
-			}
-		}
-	}));
-
-	context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
-		let param = client.code2ProtocolConverter.asTextDocumentPositionParams(window.activeTextEditor.document, new Position(window.activeTextEditor.selection.start.line,window.activeTextEditor.selection.start.character))
-		client.sendRequest("custom/jump.to.start.of.script", param).then((pos :Position) => {
-			try {
-				let position = new Position(pos.line, pos.character);
-				let range = new Range(position, position);
-				
-				window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
-				//commands.executeCommand("editor.action.insertSnippet", {langId: 'futurec', name: 'log'})
-			} catch (error) {
-				
-			}
-		});
-	}));
-
-	context.subscriptions.push(commands.registerCommand("create.hook", async () => {
-		
-		let script :{number:number,name:string} = await client.sendRequest("custom/GetScriptNumber", {
-			doc: window.activeTextEditor.document.uri.toString(),
-			pos: window.activeTextEditor.selection.active
-		});
-		
-		let scriptNumber = script.number;
-		if(scriptNumber > 0) {
-			
-			let line = window.activeTextEditor.document.lineAt(window.activeTextEditor.selection.active.line);
-			let lineText = line.text;
-			lineText = lineText.trim();
-			let regex = /^\/\/ADDHOOK.*/gm;
-			let regExMatch = regex.exec(lineText);
-			let hookname = "";
-			let insertHookname = true;
-			if(!regExMatch) {
-				let info = "Bitte geben Sie den Namen des Hooks ein.";
-				let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
-				hookname = await window.showInputBox({
-					ignoreFocusOut: true,
-					valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
-					prompt: info,
-					value: "//ADDHOOK-"+scriptNumber+"-",
-					validateInput: (text :string) => {
-						hookPattern.lastIndex = 0;
-						if(!hookPattern.exec(text)) {
-							return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
-						}
-						return "";
-					}
-				});
-			} else {
-				insertHookname = false;
-				hookname = regExMatch[0];
-			}
-			
+		context.subscriptions.push(commands.registerCommand("Collect.Statistics.For.Current.Script", async () => {
+			client.sendRequest("custom/CollectStatisticsForCurrentScript", {
+				doc: window.activeTextEditor.document.uri.toString(),
+				pos: window.activeTextEditor.selection.active
+			}).then((value) => {
+				console.log(value);
+			})
+		}));
 	
-			if(hookname) {
-				hookname.trim();
-				let uri = await window.showOpenDialog({
-					title: "Datei für Hook '" + hookname + "' auswählen",
-					canSelectFolders: false,
-					canSelectMany: false,
-					filters: { "Dateien": ["cpp"]},
-					canSelectFiles: true,
-					openLabel: "wählen"
-				});
 	
-				if(uri) {
-					let file = uri[0];
-					let doc = await workspace.openTextDocument(file);
-
-					window.withProgress({
-						location: ProgressLocation.Notification,
-						cancellable: false
-					}, (progress, token) => {
-						progress.report({message: "Es wird nach einer passenden Hookstelle gesucht..."});
-						let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
-							uri: file.toString(),
-							name: hookname,
-							number: scriptNumber,
-							pos: window.activeTextEditor.selection.active,
-							oldDoc: window.activeTextEditor.document.uri.toString(),
-							dontCheckOldDoc: false
-						});
-
-						setTimeout(() => {
-							progress.report({message: "Jetzt samma dann gleich fertig..."});
-						}, 4000);
-
-						setTimeout(() => {
-							progress.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
-						}, 8000);
-
-						setTimeout(() => {
-							progress.report({message: "Ziemlich großes Skript..."});
-						}, 12000);
-
-						setTimeout(() => {
-							progress.report({message: "Jetzt reichts aber..."});
-						}, 16000);
-
-						setTimeout(() => {
-							progress.report({message: "Ok ich geb auf..."});
-						}, 30000);
-
-						return pos.then((bothPos :any) => {
-							if(bothPos.posScript.line >= 0) {
-								progress.report({ message: "Datei wird geöffnet."});
-
-								let snippetTextForHookReal = snippetTextForHook;
-								snippetTextForHookReal = snippetTextForHookReal.replace("scriptNumber", scriptNumber.toString());
-								snippetTextForHookReal = snippetTextForHookReal.replace("hookname", hookname);
-								let snippet = new SnippetString(snippetTextForHookReal);
-			
-									
-								window.activeTextEditor.edit((editbuilder) => {
-									if(insertHookname) {
-										editbuilder.insert(window.activeTextEditor.selection.active, hookname);
-									}
-								}).then((success) => {
-									if(success) {
-										window.showTextDocument(doc, ViewColumn.Beside).then((texteditor) => {
-											progress.report({ message: "Hook wird erstellt."});
-											let position = new Position(bothPos.posScript.line, bothPos.posScript.character);
-											let range = new Range(position, position);
-											texteditor.revealRange(range, TextEditorRevealType.InCenter);					
-											texteditor.insertSnippet(snippet, position).then((success) => {
-												if(success) {
-													texteditor.edit((builder :TextEditorEdit) => {
-														let position = new Position(bothPos.posToc.line, 0);
-														builder.insert(position, "" + scriptNumber + "\t\t" + hookname + "\n");
-													});
-												} else {
-													window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
-												}
-											});
-										});
-									} else {
-										window.showErrorMessage("Hookname konnte im aktuellen Skript nicht eingefügt werden...");
-									}
-								})
-
-							} else {
-								window.showErrorMessage("Hook konnte nicht angelegt werden, weil er bereits existiert");
-							}
-						});
-						
-					});
-				}
-			}
-		} else {
-			window.showErrorMessage("Kein gültiges Skript wird bearbeitet. Hook kann nicht erstellt werden.");
-		}
-
-	}));
-
-
-	context.subscriptions.push(commands.registerCommand("create.script", async () => {
-		let info = "Bitte geben Sie die Nummer und den Namen des neuen Skripts ein.";
-		let scriptName = await window.showInputBox({
-			ignoreFocusOut: true,
-			placeHolder: "eg.: 200,Scriptname",
-			prompt: info,
-			validateInput: (text :string) => {
-				let hookPattern = new RegExp("^[0-9]+,[a-zA-ZöäüÖÄÜ_ ]+$", "g");
-				if(!hookPattern.exec(text)) {
-					return "Skriptname muss Pattern " + hookPattern.source + " entsprechen";
-				}
-				return null;
-			}
-		});
-
-		if(scriptName) {
-			scriptName.trim();
-			let hookPattern = new RegExp("^([0-9]+),([a-zA-ZöäüÖÄÜ_ ]+)$", "g");
-			let m = hookPattern.exec(scriptName);
-
-			let scriptNumber :number = Number.parseInt(m[1]);
-			window.withProgress({
-				location: ProgressLocation.Notification,
-				cancellable: false
-			}, (progress_skript_create, token) => {
-				progress_skript_create.report({message: "Es wird nach passender Skriptstelle gesucht"})
-				let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
-					uri: window.activeTextEditor.document.uri.toString(),
-					name: m[2],
-					number: scriptNumber,
-					pos: window.activeTextEditor.selection.active,
-					oldDoc: window.activeTextEditor.document.uri.toString(),
-					dontCheckOldDoc: true
-				});
-
-				setTimeout(() => {
-					progress_skript_create.report({message: "Jetzt samma dann gleich fertig..."});
-				}, 4000);
-
-				setTimeout(() => {
-					progress_skript_create.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
-				}, 8000);
-
-				setTimeout(() => {
-					progress_skript_create.report({message: "Ziemlich großes Skript..."});
-				}, 12000);
-
-				setTimeout(() => {
-					progress_skript_create.report({message: "Jetzt reichts aber..."});
-				}, 16000);
-
-				setTimeout(() => {
-					progress_skript_create.report({message: "Ok ich geb auf..."});
-				}, 30000);
-
-				return pos.then((bothPos :any) => {
-					if(bothPos.posScript.line >= 0) {
-
-						let snippetTextForScriptReal = snippetTextForScript;
-						snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptNumber", m[1]);
-						snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptName", m[2]);
-						let snippet = new SnippetString(snippetTextForScriptReal);
-	
-						let positionScript = new Position(bothPos.posScript.line, bothPos.posScript.character);
-						let range = new Range(positionScript, positionScript);
-						window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
-						window.activeTextEditor.insertSnippet(snippet, positionScript).then((success) => {
-							if(success) {
-								window.activeTextEditor.edit((editBuilder) => {
-									let position = new Position(bothPos.posToc.line, 0);
-									editBuilder.insert(position, m[1]+"\t\t"+m[2]+"\n");
-								});
-							} else {
-								window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
-							}
-						});
-						
-					} else {
-						window.showErrorMessage("Es existiert bereits ein Skript / Hook mit dieser Nummer");
-					}
-				});
-			});
-		}
-	}));
-
-	context.subscriptions.push(commands.registerCommand("custom.add.create.design.entry", async ( obj :any) => {
-		let allUris = await window.showOpenDialog({
-			canSelectFiles: true,
-			canSelectFolders: false,
-			canSelectMany: false,
-			filters: {
-				Design: ["txt"]
-			},
-			openLabel: "Design wählen"
-		});
-
-		if(allUris && obj && obj.scriptNumber) {
-			let tableNumber = await window.showInputBox({
+		context.subscriptions.push(commands.registerCommand("Show.Question.Which.Script.Working.On", () => {
+			window.showInputBox({
 				ignoreFocusOut: true,
-				prompt: "Bitte geben Sie die Dialognummer ein, in der das Skript eingefügt werden soll",
-				validateInput: (value) => {
-					let test = /[0-9]+/g
-					if(!test.exec(value)) {
-						return "Eingabe muss Pattern " + test.source + " entsprechen";
+				prompt: "Für welches Haupskript wird gerade gearbeitet?",
+			}).then((value) => {
+				client.sendNotification("custom/mainscript", {scriptnumber: value});
+			})
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("Show.columns", async (args) => {
+			
+			let found = false;
+			(await resimportattributes).forEach((value) => {
+				if(found) {  return; }
+	
+				workspace.openTextDocument(value).then((value) => {
+	
+					let text = value.getText();
+					
+					let pos = text.search(new RegExp("^" + args + "\\t5", "gm"));
+					if(pos >= 0) {
+						found = true;						
+						let pos2 = value.positionAt(pos);
+						let range = value.getWordRangeAtPosition(pos2);
+						window.showTextDocument(value, ViewColumn.Beside, true).then((value) => {
+							value.revealRange(range, TextEditorRevealType.AtTop);
+						});
+					}
+				});
+			});
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("Check.Skript.Syntax", () => {
+			let pos = new Position(window.activeTextEditor.selection.start.line, window.activeTextEditor.selection.start.character);
+			let uri = window.activeTextEditor.document.uri;
+	
+			window.withProgress({location: ProgressLocation.Notification, cancellable: false}, (progress, token) => {
+				progress.report({
+					message: "Scriptcheck in progress. This may take a while."
+				});
+				return client.sendRequest("custom/GetDiagnosticsForAllScripts", {pos: pos, uri: uri.toString()});
+			});
+			
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("create.dart.definition", async () => {
+			let uri = await window.showOpenDialog({
+				canSelectFolders: false,
+				canSelectMany: false
+			});
+	
+			if(uri && uri.length > 0) {
+				let file = uri[0];
+				let dart_doc = await workspace.openTextDocument(file);
+				
+				let dart_text = dart_doc.getText();
+				if(dart_text.length > 0) {
+					let start_table = /@FutureTableNumber\(([0-9]+)\)/gm;
+	
+					let tables = [];
+	
+					let m = start_table.exec(dart_text)
+					while(m) {
+						tables.push({
+							start_of_class: m.index,
+							table: m[1]
+						})
+						m = start_table.exec(dart_text);
+					}
+	
+					let complete_function = "";
+					for(let i = 0; i < tables.length; i++) {
+						let str = "";
+						let obj = tables[i];
+						let start_of_class = obj.start_of_class;
+						let table = obj.table;
+	
+						let class_pos = dart_doc.positionAt(start_of_class + 5);
+						let class_line = dart_doc.lineAt(class_pos.line);
+						let class_line_prev = dart_doc.lineAt(class_pos.line - 1);
+						let class_line_after = dart_doc.lineAt(class_pos.line + 1);
+	
+						let class_string = "//" + class_line_prev.text.trim() + "\n";
+						class_string += "\t//" + class_line.text.trim() + "\n";
+						class_string += "\t//" + class_line_after.text.trim();
+	
+						let end_of_class = dart_text.indexOf("}", start_of_class + 1);
+						let json = "";
+						
+						let start_column = /@FutureColumnNumber\(([0-9]+)\)/gm;
+						start_column.lastIndex = start_of_class;
+	
+						let x = start_column.exec(dart_text);
+						while(x && end_of_class > x.index && start_of_class < x.index) {
+							let pos = dart_doc.positionAt(x.index);
+							let line_after = dart_doc.lineAt(pos.line + 1);
+							let current_line = dart_doc.lineAt(pos.line);
+							let line_prev = dart_doc.lineAt(pos.line - 1);
+	
+							str = str + "\n\t\t//" + line_prev.text.trim();
+							str = str + "\n\t\t//" + current_line.text.trim();
+							str = str + "\n\t\t//" + line_after.text.trim();
+	
+							let var_reg = /.*get ([a-zA-ZöäüÖÄÜ_0-9]+)/gm;
+							let variable = var_reg.exec(line_after.text);
+							if(variable) {
+								str = str + "\n" + "\t\tCString str" + variable[1] + ` = tData.GetElementSTRING(${x[1]}, nRow);\n`;
+							}
+							if(json.length > 0) {
+								json = json + ",\n\t\t\t";
+							}
+							json = `${json}"${variable[1]}": "§$str${variable[1]}$§"`;
+	
+							x = start_column.exec(dart_text);
+						}
+						json = json.trim();
+						
+						str = `${str}
+							
+			strJson = §START_JSON§
+			{
+				${json}
+			}
+			§END_JSON§
+				
+				`;
+	
+						complete_function =  complete_function + `
+		${class_string}
+		if (nTable == ${table}) {
+	${str}
+		};
+	`;
+					}
+	
+					complete_function = `// Konvertiert jede Tabelle zu entsprechenden JSON Objekt
+	FUNCTION: CString GetDataAsJson(CTable& tData, int nRow, int nTable, int nGuidColumn);
+		CString strJson;
+			${complete_function}
+	
+		funcreturn strJson;
+	ENDFUNCTION;
+	
+	`;
+	
+					window.activeTextEditor.edit((editor) => {
+						editor.insert(window.activeTextEditor.selection.active, complete_function);
+					});
+				}
+			}
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("jump.to.start.of.script", () => {
+			let param = client.code2ProtocolConverter.asTextDocumentPositionParams(window.activeTextEditor.document, new Position(window.activeTextEditor.selection.start.line,window.activeTextEditor.selection.start.character))
+			client.sendRequest("custom/jump.to.start.of.script", param).then((pos :Position) => {
+				try {
+					let position = new Position(pos.line, pos.character);
+					let range = new Range(position, position);
+					
+					window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
+					//commands.executeCommand("editor.action.insertSnippet", {langId: 'futurec', name: 'log'})
+				} catch (error) {
+					
+				}
+			});
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("create.hook", async () => {
+			
+			let script :{number:number,name:string} = await client.sendRequest("custom/GetScriptNumber", {
+				doc: window.activeTextEditor.document.uri.toString(),
+				pos: window.activeTextEditor.selection.active
+			});
+			
+			let scriptNumber = script.number;
+			if(scriptNumber > 0) {
+				
+				let line = window.activeTextEditor.document.lineAt(window.activeTextEditor.selection.active.line);
+				let lineText = line.text;
+				lineText = lineText.trim();
+				let regex = /^\/\/ADDHOOK.*/gm;
+				let regExMatch = regex.exec(lineText);
+				let hookname = "";
+				let insertHookname = true;
+				if(!regExMatch) {
+					let info = "Bitte geben Sie den Namen des Hooks ein.";
+					let hookPattern = new RegExp("^\\/\\/ADDHOOK\\-("+scriptNumber+")\\-[a-zA-ZöäüÖÄÜ_0-9]+$", "g");
+					hookname = await window.showInputBox({
+						ignoreFocusOut: true,
+						valueSelection: [11 + scriptNumber.toString().length, 11 + scriptNumber.toString().length],
+						prompt: info,
+						value: "//ADDHOOK-"+scriptNumber+"-",
+						validateInput: (text :string) => {
+							hookPattern.lastIndex = 0;
+							if(!hookPattern.exec(text)) {
+								return "Hookname muss Pattern " + hookPattern.source + " entsprechen";
+							}
+							return "";
+						}
+					});
+				} else {
+					insertHookname = false;
+					hookname = regExMatch[0];
+				}
+				
+		
+				if(hookname) {
+					hookname.trim();
+					let uri = await window.showOpenDialog({
+						title: "Datei für Hook '" + hookname + "' auswählen",
+						canSelectFolders: false,
+						canSelectMany: false,
+						filters: { "Dateien": ["cpp"]},
+						canSelectFiles: true,
+						openLabel: "wählen"
+					});
+		
+					if(uri) {
+						let file = uri[0];
+						let doc = await workspace.openTextDocument(file);
+	
+						window.withProgress({
+							location: ProgressLocation.Notification,
+							cancellable: false
+						}, (progress, token) => {
+							progress.report({message: "Es wird nach einer passenden Hookstelle gesucht..."});
+							let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
+								uri: file.toString(),
+								name: hookname,
+								number: scriptNumber,
+								pos: window.activeTextEditor.selection.active,
+								oldDoc: window.activeTextEditor.document.uri.toString(),
+								dontCheckOldDoc: false
+							});
+	
+							setTimeout(() => {
+								progress.report({message: "Jetzt samma dann gleich fertig..."});
+							}, 4000);
+	
+							setTimeout(() => {
+								progress.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
+							}, 8000);
+	
+							setTimeout(() => {
+								progress.report({message: "Ziemlich großes Skript..."});
+							}, 12000);
+	
+							setTimeout(() => {
+								progress.report({message: "Jetzt reichts aber..."});
+							}, 16000);
+	
+							setTimeout(() => {
+								progress.report({message: "Ok ich geb auf..."});
+							}, 30000);
+	
+							return pos.then((bothPos :any) => {
+								if(bothPos.posScript.line >= 0) {
+									progress.report({ message: "Datei wird geöffnet."});
+	
+									let snippetTextForHookReal = snippetTextForHook;
+									snippetTextForHookReal = snippetTextForHookReal.replace("scriptNumber", scriptNumber.toString());
+									snippetTextForHookReal = snippetTextForHookReal.replace("hookname", hookname);
+									let snippet = new SnippetString(snippetTextForHookReal);
+				
+										
+									window.activeTextEditor.edit((editbuilder) => {
+										if(insertHookname) {
+											editbuilder.insert(window.activeTextEditor.selection.active, hookname);
+										}
+									}).then((success) => {
+										if(success) {
+											window.showTextDocument(doc, ViewColumn.Beside).then((texteditor) => {
+												progress.report({ message: "Hook wird erstellt."});
+												let position = new Position(bothPos.posScript.line, bothPos.posScript.character);
+												let range = new Range(position, position);
+												texteditor.revealRange(range, TextEditorRevealType.InCenter);					
+												texteditor.insertSnippet(snippet, position).then((success) => {
+													if(success) {
+														texteditor.edit((builder :TextEditorEdit) => {
+															let position = new Position(bothPos.posToc.line, 0);
+															builder.insert(position, "" + scriptNumber + "\t\t" + hookname + "\n");
+														});
+													} else {
+														window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
+													}
+												});
+											});
+										} else {
+											window.showErrorMessage("Hookname konnte im aktuellen Skript nicht eingefügt werden...");
+										}
+									})
+	
+								} else {
+									window.showErrorMessage("Hook konnte nicht angelegt werden, weil er bereits existiert");
+								}
+							});
+							
+						});
+					}
+				}
+			} else {
+				window.showErrorMessage("Kein gültiges Skript wird bearbeitet. Hook kann nicht erstellt werden.");
+			}
+	
+		}));
+	
+	
+		context.subscriptions.push(commands.registerCommand("create.script", async () => {
+			let info = "Bitte geben Sie die Nummer und den Namen des neuen Skripts ein.";
+			let scriptName = await window.showInputBox({
+				ignoreFocusOut: true,
+				placeHolder: "eg.: 200,Scriptname",
+				prompt: info,
+				validateInput: (text :string) => {
+					let hookPattern = new RegExp("^[0-9]+,[a-zA-ZöäüÖÄÜ_ ]+$", "g");
+					if(!hookPattern.exec(text)) {
+						return "Skriptname muss Pattern " + hookPattern.source + " entsprechen";
 					}
 					return null;
 				}
 			});
-				
-			if(tableNumber) {
-				let table :number = Number.parseInt(tableNumber);
-				let uri = allUris[0];
-
+	
+			if(scriptName) {
+				scriptName.trim();
+				let hookPattern = new RegExp("^([0-9]+),([a-zA-ZöäüÖÄÜ_ ]+)$", "g");
+				let m = hookPattern.exec(scriptName);
+	
+				let scriptNumber :number = Number.parseInt(m[1]);
 				window.withProgress({
 					location: ProgressLocation.Notification,
 					cancellable: false
-				}, (progressDesign) => {
-					progressDesign.report({ message: "Passender Bereich wird für Designeintrag gesucht..."});
-
-					let thenableDoc = workspace.openTextDocument(uri);
-					return thenableDoc.then((doc) => {
-
-						let docText = doc.getText();
-						let reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*SCRIPTS=).*\\b"+obj.scriptNumber+"\\b.*$", "gm");
-						let m = reg.exec(docText);
-
-						const columnCount = 400;
-						const tableCount = 750;
-
-						if(!m) {
-							let textToAddAfter = "";
-							let textToAddBefore = "";
-							let index = -1;
-
-							if(docText.length > 3000) {
-
-								reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*SCRIPTS=).*$", "gm");
-								m = reg.exec(docText);
-								if(m) {
-									index = m.index + (<string>m[1]).length;
-									textToAddAfter = ",";
+				}, (progress_skript_create, token) => {
+					progress_skript_create.report({message: "Es wird nach passender Skriptstelle gesucht"})
+					let pos :Thenable<Position> = client.sendRequest("custom/getHookStart", {
+						uri: window.activeTextEditor.document.uri.toString(),
+						name: m[2],
+						number: scriptNumber,
+						pos: window.activeTextEditor.selection.active,
+						oldDoc: window.activeTextEditor.document.uri.toString(),
+						dontCheckOldDoc: true
+					});
+	
+					setTimeout(() => {
+						progress_skript_create.report({message: "Jetzt samma dann gleich fertig..."});
+					}, 4000);
+	
+					setTimeout(() => {
+						progress_skript_create.report({message: "Kann sich hoffentlich nur mehr um Stunden handeln..."});
+					}, 8000);
+	
+					setTimeout(() => {
+						progress_skript_create.report({message: "Ziemlich großes Skript..."});
+					}, 12000);
+	
+					setTimeout(() => {
+						progress_skript_create.report({message: "Jetzt reichts aber..."});
+					}, 16000);
+	
+					setTimeout(() => {
+						progress_skript_create.report({message: "Ok ich geb auf..."});
+					}, 30000);
+	
+					return pos.then((bothPos :any) => {
+						if(bothPos.posScript.line >= 0) {
+	
+							let snippetTextForScriptReal = snippetTextForScript;
+							snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptNumber", m[1]);
+							snippetTextForScriptReal = snippetTextForScriptReal.replace("scriptName", m[2]);
+							let snippet = new SnippetString(snippetTextForScriptReal);
+		
+							let positionScript = new Position(bothPos.posScript.line, bothPos.posScript.character);
+							let range = new Range(positionScript, positionScript);
+							window.activeTextEditor.revealRange(range, TextEditorRevealType.InCenter);
+							window.activeTextEditor.insertSnippet(snippet, positionScript).then((success) => {
+								if(success) {
+									window.activeTextEditor.edit((editBuilder) => {
+										let position = new Position(bothPos.posToc.line, 0);
+										editBuilder.insert(position, m[1]+"\t\t"+m[2]+"\n");
+									});
+								} else {
+									window.showErrorMessage("Snippet konnte nicht eingefügt werden...");
 								}
-
-								if(index < 0) {
-									reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*).*$", "gm");
-									m = reg.exec(docText);
-									if(m) {
-										index = m.index + (<string>m[1]).length;
-									}
-									textToAddBefore = "SCRIPTS=";
-									textToAddAfter = ";";
-								}
-								
-								if(index < 0) {
-									let start = 0;
-									while(index < 0 && start <= columnCount) {
-										reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+table+"\\b;\\b"+start+"\\b.*)$", "gm");
-										m = reg.exec(docText);
-										if(m) {
-											index = m.index;
-										}
-										start++;
-									}
-									textToAddBefore = "ADDDIALOGINFO:"+tableNumber+";SCRIPTS=";
-									textToAddAfter = ";\n";
-									
-
-									let tableStart = table - 1;
-									while(index < 0 && tableStart > 0) {
-										start = columnCount;
-										while(index < 0 && start > 0) {
-											reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+tableStart+"\\b;\\b"+start+"\\b.*)$", "gm");
-											m = reg.exec(docText);
-											if(m) {
-												index = m.index + (<string>m[1]).length;
-												textToAddBefore = "\n\n\n// Eintrag für Tabelle "+table+"\n"+textToAddBefore;
-											}
-											start--;
-										}
-										tableStart--;
-									}
-
-									tableStart = table + 1;
-									while(index < 0 && tableStart < tableCount) {
-										start = 0;
-										while(index < 0 && start < columnCount) {
-											reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+tableStart+"\\b;\\b"+start+"\\b.*)$", "gm");
-											m = reg.exec(docText);
-											if(m) {
-												index = m.index + (<string>m[1]).length;
-											}
-											start++;
-										}
-										tableStart++;
-									}
-
-									if(index < 0) {
-										index = 0;
-									}
-								}
-							} else {
-								textToAddBefore = "// Eintrag für Tabelle "+table+"\nADDDIALOGINFO:"+tableNumber+";SCRIPTS=";
-								textToAddAfter = ";\n";
-								index = 0;
-							}
-
-
-							if(index >= 0) {
-								let position = doc.positionAt(index);
-								let range = new Range(position, position);
-								window.showTextDocument(doc, ViewColumn.Beside).then((editor) => {
-									editor.revealRange(range, TextEditorRevealType.InCenter);
-									
-									editor.edit((builder) => {
-										let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
-										builder.insert(position, string);
-									}).then((success) => {
-
-
-										let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
-										editor.selection = new Selection(position ,doc.positionAt(index+string.length));
-										window.showInformationMessage("Designeintrag wurde erfolgreich erstellt.");
-									})
-								})
-							} else {
-								window.showErrorMessage("Skript kann nicht automatisch hinzugefügt werden...");
-							}
+							});
+							
 						} else {
-							window.showErrorMessage("Skript wurde bereits dieser Tabelle hinzugefügt");
+							window.showErrorMessage("Es existiert bereits ein Skript / Hook mit dieser Nummer");
 						}
 					});
 				});
 			}
-		}
-	}));
-
-	context.subscriptions.push(commands.registerCommand("custom.delete.design.entry",  async ( obj :any) => {
-		let allUris = await window.showOpenDialog({
-			canSelectFiles: true,
-			canSelectFolders: false,
-			canSelectMany: false,
-			filters: {
-				"Design": ["txt"]
-			},
-			openLabel: "wählen"
-		});
-
-		if(allUris) {
-			let tableNumber = await window.showInputBox({
-				ignoreFocusOut: true,
-				prompt: "Bitte geben Sie die Tabellenummer ein, aus der Sie das Skript entfernen wollen",
-				validateInput: (text) => {
-					let regex = /[0-9]+/g;
-					if(!regex.exec(text)) {
-						return "Tabellennummer muss Pattern " + regex.source + " entsprechen";
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("custom.add.create.design.entry", async ( obj :any) => {
+			let allUris = await window.showOpenDialog({
+				canSelectFiles: true,
+				canSelectFolders: false,
+				canSelectMany: false,
+				filters: {
+					Design: ["txt"]
+				},
+				openLabel: "Design wählen"
+			});
+	
+			if(allUris && obj && obj.scriptNumber) {
+				let tableNumber = await window.showInputBox({
+					ignoreFocusOut: true,
+					prompt: "Bitte geben Sie die Dialognummer ein, in der das Skript eingefügt werden soll",
+					validateInput: (value) => {
+						let test = /[0-9]+/g
+						if(!test.exec(value)) {
+							return "Eingabe muss Pattern " + test.source + " entsprechen";
+						}
+						return null;
 					}
-					return null;
-				}
-			})
-
-			if(tableNumber) {
-				let tableNumberInt = Number.parseInt(tableNumber);
-				let uri = allUris[0];
-				let doc = await workspace.openTextDocument(uri);
-				let docText = doc.getText();
-				
-				let regexDesign = new RegExp("^\\b(ADDDIALOGINFO|CHANGEDIALOGELEMENT):\\b"+tableNumberInt+"\\b;.*\\b(SCRIPTS=.*\\b"+obj.scriptNumber+"\\b.*)$", "gm");
-				let m = regexDesign.exec(docText);
-				if(m) {
-					let pos = doc.positionAt(m.index);
-					let pos2 = doc.positionAt(m.index + (<string>m[1]).length);
-					let range = new Range(pos ,pos2);
+				});
 					
-					let editor = await window.showTextDocument(doc, ViewColumn.Beside, false);
-					editor.revealRange(range, TextEditorRevealType.InCenter);
-					editor.selection = new Selection(doc.lineAt(pos.line).range.start, doc.lineAt(pos.line).range.end);					
-				} else {
-					window.showErrorMessage("Skript ist bereits aus Tabelle entfernt worden");
+				if(tableNumber) {
+					let table :number = Number.parseInt(tableNumber);
+					let uri = allUris[0];
+	
+					window.withProgress({
+						location: ProgressLocation.Notification,
+						cancellable: false
+					}, (progressDesign) => {
+						progressDesign.report({ message: "Passender Bereich wird für Designeintrag gesucht..."});
+	
+						let thenableDoc = workspace.openTextDocument(uri);
+						return thenableDoc.then((doc) => {
+	
+							let docText = doc.getText();
+							let reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*SCRIPTS=).*\\b"+obj.scriptNumber+"\\b.*$", "gm");
+							let m = reg.exec(docText);
+	
+							const columnCount = 400;
+							const tableCount = 750;
+	
+							if(!m) {
+								let textToAddAfter = "";
+								let textToAddBefore = "";
+								let index = -1;
+	
+								if(docText.length > 3000) {
+	
+									reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*SCRIPTS=).*$", "gm");
+									m = reg.exec(docText);
+									if(m) {
+										index = m.index + (<string>m[1]).length;
+										textToAddAfter = ",";
+									}
+	
+									if(index < 0) {
+										reg = new RegExp("^(ADDDIALOGINFO:\\b"+table+"\\b.*).*$", "gm");
+										m = reg.exec(docText);
+										if(m) {
+											index = m.index + (<string>m[1]).length;
+										}
+										textToAddBefore = "SCRIPTS=";
+										textToAddAfter = ";";
+									}
+									
+									if(index < 0) {
+										let start = 0;
+										while(index < 0 && start <= columnCount) {
+											reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+table+"\\b;\\b"+start+"\\b.*)$", "gm");
+											m = reg.exec(docText);
+											if(m) {
+												index = m.index;
+											}
+											start++;
+										}
+										textToAddBefore = "ADDDIALOGINFO:"+tableNumber+";SCRIPTS=";
+										textToAddAfter = ";\n";
+										
+	
+										let tableStart = table - 1;
+										while(index < 0 && tableStart > 0) {
+											start = columnCount;
+											while(index < 0 && start > 0) {
+												reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+tableStart+"\\b;\\b"+start+"\\b.*)$", "gm");
+												m = reg.exec(docText);
+												if(m) {
+													index = m.index + (<string>m[1]).length;
+													textToAddBefore = "\n\n\n// Eintrag für Tabelle "+table+"\n"+textToAddBefore;
+												}
+												start--;
+											}
+											tableStart--;
+										}
+	
+										tableStart = table + 1;
+										while(index < 0 && tableStart < tableCount) {
+											start = 0;
+											while(index < 0 && start < columnCount) {
+												reg = new RegExp("^(CHANGEDIALOGELEMENT:\\b"+tableStart+"\\b;\\b"+start+"\\b.*)$", "gm");
+												m = reg.exec(docText);
+												if(m) {
+													index = m.index + (<string>m[1]).length;
+												}
+												start++;
+											}
+											tableStart++;
+										}
+	
+										if(index < 0) {
+											index = 0;
+										}
+									}
+								} else {
+									textToAddBefore = "// Eintrag für Tabelle "+table+"\nADDDIALOGINFO:"+tableNumber+";SCRIPTS=";
+									textToAddAfter = ";\n";
+									index = 0;
+								}
+	
+	
+								if(index >= 0) {
+									let position = doc.positionAt(index);
+									let range = new Range(position, position);
+									window.showTextDocument(doc, ViewColumn.Beside).then((editor) => {
+										editor.revealRange(range, TextEditorRevealType.InCenter);
+										
+										editor.edit((builder) => {
+											let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
+											builder.insert(position, string);
+										}).then((success) => {
+	
+	
+											let string = ""+textToAddBefore+obj.scriptNumber+textToAddAfter;
+											editor.selection = new Selection(position ,doc.positionAt(index+string.length));
+											window.showInformationMessage("Designeintrag wurde erfolgreich erstellt.");
+										})
+									})
+								} else {
+									window.showErrorMessage("Skript kann nicht automatisch hinzugefügt werden...");
+								}
+							} else {
+								window.showErrorMessage("Skript wurde bereits dieser Tabelle hinzugefügt");
+							}
+						});
+					});
 				}
 			}
-
-		}
-
-	}));
+		}));
+	
+		context.subscriptions.push(commands.registerCommand("custom.delete.design.entry",  async ( obj :any) => {
+			let allUris = await window.showOpenDialog({
+				canSelectFiles: true,
+				canSelectFolders: false,
+				canSelectMany: false,
+				filters: {
+					"Design": ["txt"]
+				},
+				openLabel: "wählen"
+			});
+	
+			if(allUris) {
+				let tableNumber = await window.showInputBox({
+					ignoreFocusOut: true,
+					prompt: "Bitte geben Sie die Tabellenummer ein, aus der Sie das Skript entfernen wollen",
+					validateInput: (text) => {
+						let regex = /[0-9]+/g;
+						if(!regex.exec(text)) {
+							return "Tabellennummer muss Pattern " + regex.source + " entsprechen";
+						}
+						return null;
+					}
+				})
+	
+				if(tableNumber) {
+					let tableNumberInt = Number.parseInt(tableNumber);
+					let uri = allUris[0];
+					let doc = await workspace.openTextDocument(uri);
+					let docText = doc.getText();
+					
+					let regexDesign = new RegExp("^\\b(ADDDIALOGINFO|CHANGEDIALOGELEMENT):\\b"+tableNumberInt+"\\b;.*\\b(SCRIPTS=.*\\b"+obj.scriptNumber+"\\b.*)$", "gm");
+					let m = regexDesign.exec(docText);
+					if(m) {
+						let pos = doc.positionAt(m.index);
+						let pos2 = doc.positionAt(m.index + (<string>m[1]).length);
+						let range = new Range(pos ,pos2);
+						
+						let editor = await window.showTextDocument(doc, ViewColumn.Beside, false);
+						editor.revealRange(range, TextEditorRevealType.InCenter);
+						editor.selection = new Selection(doc.lineAt(pos.line).range.start, doc.lineAt(pos.line).range.end);					
+					} else {
+						window.showErrorMessage("Skript ist bereits aus Tabelle entfernt worden");
+					}
+				}
+	
+			}
+	
+		}));
+	});
+	
 
 	//
 	// Start the client. This will also launch the server

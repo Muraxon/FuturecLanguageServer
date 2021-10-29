@@ -52,8 +52,42 @@ interface ScriptInformation {
 }
 
 export class CParser {
-	
+	m_Statistics :StatisticsForParser;
+	m_GenerateStatistics :boolean;
+	collectStatistics(tokens :Token[], index :number, currentToken :Token, functionToken :Token, parameterToken :Token|null = null, isInParameterlist :boolean = false) {
+		if(this.m_GenerateStatistics) {
+			if(!isInParameterlist) {
 
+				let tok = this.m_Statistics.get(currentToken.m_Text);
+				if(tok) {
+					let num = tok.get(functionToken.m_Text);
+					if(num) {
+						num.times_used = num.times_used + 1;
+						tok.set(functionToken.m_Text, num);
+					} else {
+						tok.set(functionToken.m_Text, {times_used :1, from_tables: []});
+					}
+				} else {
+					let map :FunctionInfoMap = new Map();
+					map.set(functionToken.m_Text, {times_used: 1, from_tables: []});
+					this.m_Statistics.set(currentToken.m_Text, map);
+				}
+			} else {
+				let tok = this.m_Statistics.get(currentToken.m_Text);
+				if(tok) {
+					let num = tok.get(functionToken.m_Text);
+					if(num) {
+						if(parameterToken) {
+							num.from_tables.push(parameterToken.m_Text);
+						}
+
+						tok.set(functionToken.m_Text, num);
+					}
+				}
+			}
+		}
+	}
+	
 	getToken(token :Token[], pos :number) {
 		if(token[pos]) {
 			return token[pos];
@@ -66,8 +100,10 @@ export class CParser {
 
 	m_ErrorCount :number;
 
-	constructor() {
-		this.m_ErrorCount = 0;	
+	constructor(generateStatistics :boolean = false) {
+		this.m_ErrorCount = 0;
+		this.m_Statistics = new Map();
+		this.m_GenerateStatistics = generateStatistics;
 	}
 	isVariableDefined(variable :string, definedVariables_ :Map<string, Variable>[], scope :number) :Variable|undefined {
 		let j = 0;
@@ -286,7 +322,9 @@ export class CParser {
 		return false;
 	}
 
-	parseParameterlist(tokens :Token[],
+	parseParameterlist(
+		currentToken :Token,
+		tokens :Token[],
 		index :number,
 		definedVariables :Map<string, Variable>[],
 		func :SignatureInformation,
@@ -303,6 +341,8 @@ export class CParser {
 		let param = newToken.m_Text == ")" ? 0 : 1;
 		index++;
 		let missingParameters = "";
+
+		let firstParameterText = "";
 
 		while(paranthScope >= 1) {
 			let token = this.getToken(tokens, index);
@@ -333,9 +373,17 @@ export class CParser {
 					index++;
 					param++;
 				}
+			} else if(param == 1 && token.m_Text != ",") {
+				firstParameterText += token.m_Text;
 			}
 			index++;
 		}
+
+		if(firstParameterText.length > 0) {
+			let firstParameterToken = new Token(firstParameterText, {end:1, start: 1});
+			this.collectStatistics(tokens, index, currentToken, funcToken, firstParameterToken, true);
+		}
+
 		let token = this.getToken(tokens, index);
 		if(!this.isControlChar(token.m_Text)) {
 			this.addError("';' is missing.", diag, doc, scriptPos, this.getToken(tokens, index - 1), isIncludescript);
@@ -685,7 +733,9 @@ export class CParser {
 										this.addError("Function '"+thirdToken.m_Text+"' is not a parserfunction from the global namespace '"+currentTokenText+"'", diag, doc, scriptPos, thirdToken, isIncludescript);
 									} else {
 
-										let parameterListError = this.parseParameterlist(tokens, i, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
+										this.collectStatistics(tokens, i, currentToken, thirdToken);
+
+										let parameterListError = this.parseParameterlist(currentToken, tokens, i, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
 										i = parameterListError.new_index;
 									}
 								}
@@ -1132,7 +1182,9 @@ export class CParser {
 										i += 3;
 										this.addError("after Parserfunction must follow an Paranthesis", diag, doc, scriptPos, fourthToken, isIncludescript);
 									} else {
-										let parameterListError = this.parseParameterlist(tokens, i + 3, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
+										this.collectStatistics(tokens, i, currentToken, thirdToken);
+
+										let parameterListError = this.parseParameterlist(currentToken, tokens, i + 3, definedVariables, func, thirdToken, scopeLevel, isIncludescript, hasIncludescript, diag, doc, scriptPos);
 										i = parameterListError.new_index;
 									}
 								}

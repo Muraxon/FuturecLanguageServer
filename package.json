@@ -27,6 +27,11 @@
                     "when": "editorFocus && editorLangId == futurec",
                     "command": "Check.Skript.Syntax",
                     "group": "navigation"
+                },
+                {
+                    "when": "editorFocus && editorLangId == futurec",
+                    "command": "Collect.Statistics.For.Current.Script",
+                    "group": "navigation"
                 }
             ],
             "editor/title": [
@@ -34,6 +39,11 @@
                     "command": "Check.Skript.Syntax",
                     "group": "navigation",
                     "when": "editorFocus && editorLangId == futurec"
+                },
+                {
+                    "when": "editorFocus && editorLangId == futurec",
+                    "command": "Collect.Statistics.For.Current.Script",
+                    "group": "navigation"
                 }
             ]
         },
@@ -176,6 +186,11 @@
             {
                 "command": "Check.Skript.Syntax",
                 "title": "Check Skript Syntax",
+                "enablement": "editorFocus && editorLangId == futurec"
+            },
+            {
+                "command": "Collect.Statistics.For.Current.Script",
+                "title": "Sammelt Statistiken über Skript",
                 "enablement": "editorFocus && editorLangId == futurec"
             },
             {

@@ -44,6 +44,7 @@ import { OnCompletion } from './Events/OnCompletion';
 import { OnDiagnostic } from './Events/OnDiagnostic';
 import { TextParser } from './TextParser';
 import { OnDiagnosticForAllScripts } from './Events/OnDiagnosticAllFiles';
+import { OnCollectStatistics } from './Commands/OnCollectStatistics';
 
 export let parserFunctions :ParserFunctions = new ParserFunctions();
 
@@ -274,6 +275,33 @@ connection.onRequest("custom/GetDiagnosticsForAllScripts", async (obj) => {
 		});
 	}
 	return 1;
+});
+
+connection.onRequest("custom/CollectStatisticsForCurrentScript", (obj) => {
+
+	let doc :string = obj.doc;
+	let docc = documents.get(doc);
+	if(docc) {
+		let stats :StatisticsForParser = GlobalManager.doWithDocuments(documents, docc, obj.pos, OnCollectStatistics);
+
+		let completeStats :any[] = [];
+		stats.forEach((val, key) => {
+			let test :any[] = [];
+			val.forEach((val2, key2) => {
+				test.push({
+					func: key2,
+					num: val2.times_used,
+					tables: val2.from_tables
+				})
+			})
+
+			completeStats.push({
+				[key] : test
+			})
+		})
+		return completeStats;
+	}
+	return null;
 });
 
 connection.onNotification("custom/sendFilename", (uris: string[]) => {
