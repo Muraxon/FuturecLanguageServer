@@ -229,6 +229,8 @@
     "icon": "logo.png",
     "dependencies": {
         "lru-cache": "^6.0.0",
-        "minimatch": "^3.0.4"
+        "minimatch": "^3.0.4",
+        "vscode": "1.1.37",
+        "vscode-languageclient": "9.0.1"
     }
 }

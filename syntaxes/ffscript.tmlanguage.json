@@ -7,6 +7,8 @@
 		}, {
 			"include": "#strings"
 		}, {
+			"include": "#stringsBlock"
+		}, {
 			"include": "#variableDefinitions"
 		}, {
 			"include": "#functionDefinition"
@@ -52,6 +54,8 @@
 					"include": "#keywords"
 				}, {
 					"include": "#strings"
+				}, {
+					"include": "#stringsBlock"
 				}, {
 					"include": "#variableDefinitions"
 				}, {
@@ -116,6 +120,8 @@
 				}, {
 					"include": "#strings"
 				}, {
+					"include": "#stringsBlock"
+				}, {
 					"include": "#variableDefinitions"
 				}, {
 					"include": "#functionDefinition"
@@ -143,6 +149,16 @@
 				{
 					"name": "constant.character.escape.ffscript",
 					"match": "\\\\."
+				}
+			]
+		},
+		"stringsBlock": {
+			"name": "string.quoted.double.ffscript",
+			"begin": "\\$§|§START_VERBATIM§|§START_JSON§",
+			"end": "§\\$|§END_VERBATIM§|§END_JSON§",
+			"patterns": [
+				{
+					"name": "constant.character.escape.ffscript"
 				}
 			]
 		},
