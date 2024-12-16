@@ -173,10 +173,10 @@ export class CParser {
 							}
 						}
 						let posDefine = tempText.indexOf("DEFINE:");
-                        if(posDefine > 0){
-                            pos = pos + posDefine + 7;
-                            continue;
-                        }
+						if((posDefine > 0) && (!isIncludescript)){
+							pos = pos + posDefine + 7;
+							continue;
+						}
 						pos = posTemp;
 						startOfIdentifier = -1;
 					} else {
