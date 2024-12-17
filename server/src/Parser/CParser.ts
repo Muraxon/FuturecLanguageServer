@@ -158,9 +158,9 @@ export class CParser {
 					let posTemp = text.indexOf("\n", pos);
 					if(posTemp > pos) {
 
+						let tempText = text.substring(pos, posTemp);
 						if(script.m_ScriptType == "SCRIPT") {
 							let reg = /\/\/\s*(ADDHOOK[^0-9]*[0-9]+.*)\s*/g;
-							let tempText = text.substring(pos, posTemp);
 							let m = reg.exec(tempText);
 							if(m) {
 								let token = new Token("__ADDHOOK__", {start: pos, end: pos + 9});
@@ -171,6 +171,11 @@ export class CParser {
 								tokens.push(token2);
 								tokens.push(token3);
 							}
+						}
+						let posDefine = tempText.indexOf("DEFINE:");
+						if((posDefine > 0) && (!isIncludescript)){
+							pos = pos + posDefine + 7;
+							continue;
 						}
 						pos = posTemp;
 						startOfIdentifier = -1;
@@ -827,13 +832,17 @@ export class CParser {
 					definedFunctions.push([]);
 				} 
 				else if(currentTokenText == "§") {
+					let isJson = true;
 					let secondToken = this.getToken(tokens,i + 1);
-					if(secondToken.m_Text != "START_JSON") {
-						this.addError("After '§' must follow an 'START_JSON'", diag, doc, scriptPos, secondToken,isIncludescript);
+					if((secondToken.m_Text != "START_JSON") && (secondToken.m_Text != "START_VERBATIM")) {
+						this.addError("After '§' must follow an 'START_JSON or an '§START_VERBATIM§'", diag, doc, scriptPos, secondToken,isIncludescript);
 					} else {
+						if(secondToken.m_Text == "START_VERBATIM"){
+							isJson = false;
+						}
 						let thirdToken = this.getToken(tokens,i + 2);
 						if(thirdToken.m_Text != "§") {
-							this.addError("After 'START_JSON' must follow an '§'", diag, doc, scriptPos, secondToken,isIncludescript);
+							this.addError("After '" + secondToken.m_Text + "' must follow an '§'", diag, doc, scriptPos, secondToken,isIncludescript);
 						} else {
 							i += 3;
 							let json :string = "";
@@ -842,11 +851,17 @@ export class CParser {
 								if(nextJsonToken.m_Text == "§") {
 									i++;
 									let tokenAfterParagraph = this.getToken(tokens,i);
-									if(tokenAfterParagraph.m_Text == "END_JSON") {
+									if((tokenAfterParagraph.m_Text == "END_JSON") || (tokenAfterParagraph.m_Text == "END_VERBATIM")) {
+										if((secondToken.m_Text == "START_VERBATIM") && (tokenAfterParagraph.m_Text == "END_JSON")){
+											this.addError("'START_VERBATIM' has to end with an 'END_VERBATIM'", diag, doc, scriptPos, tokenAfterParagraph,isIncludescript);
+										}
+										if((secondToken.m_Text == "START_JSON") && (tokenAfterParagraph.m_Text == "END_VERBATIM")){
+											this.addError("'START_JSON' has to end with an 'END_JSON'", diag, doc, scriptPos, tokenAfterParagraph,isIncludescript);
+										}
 										i++;
 										let tokenAfterEndToken = this.getToken(tokens,i);
 										if(tokenAfterEndToken.m_Text != "§") {
-											this.addError("After 'END_JSON' must follow an '§'", diag, doc, scriptPos, tokenAfterParagraph,isIncludescript);
+											this.addError("After '" + tokenAfterParagraph.m_Text + "' must follow an '§'", diag, doc, scriptPos, tokenAfterParagraph,isIncludescript);
 										}
 										break;
 									} else {
@@ -909,7 +924,9 @@ export class CParser {
 								json = json.replace("bSOUNGTESTUNGb", "$§\"");
 							}
 							try {
-								JSON.parse(json);
+								if(isJson){
+									JSON.parse(json);
+								}
 							} catch (error :any) { 
 								this.addError(error.message, diag, doc, scriptPos, secondToken,isIncludescript);
 							}
